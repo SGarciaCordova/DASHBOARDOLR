@@ -1,0 +1,17 @@
+--- START DEBUG ---
+Loading locations...
+Locations loaded: 12750 rows
+Columns: ['PASILLO', 'ID UBICACION', 'UBICACION', 'POSICION', 'NIVEL']
+Max POSICION: 64
+
+Loading Inventory...
+Inventory loaded: 91044 rows
+
+Computing Heatmap Data...
+Keys: ['pasillos', 'max_position', 'cells']
+Pasillos count: 30
+Max Position: 64
+Cells count: 1565
+Sample Cell: {'pasillo': 'A', 'position': 1, 'qty': 897, 'loc_count': 2}
+Cells with >0 qty: 1565
+--- END DEBUG ---

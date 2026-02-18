@@ -1,0 +1,18 @@
+services:
+  dashboard:
+    build: .
+    container_name: antigravity_sgc
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - DOCKER_ENV=1
+      - TZ=America/Mexico_City
+    volumes:
+      # Persistir bases de datos SQLite fuera del contenedor
+      - ./auth_system:/app/auth_system
+      - ./data:/app/data
+    restart: unless-stopped
+    # Necesario para que Chrome headless funcione dentro del contenedor
+    shm_size: "2gb"

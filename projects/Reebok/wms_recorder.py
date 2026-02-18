@@ -1,0 +1,80 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+import os
+
+def record_session():
+    print("🚀 Iniciando navegador (Standard Selenium)...")
+    
+    options = webdriver.ChromeOptions()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--start-maximized")
+    # options.add_argument("--headless") # Commented out for visibility
+    
+    try:
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+    except Exception as e:
+        print(f"❌ Error al iniciar Chrome: {e}")
+        return
+
+    try:
+        url = "https://apolo.soft-gator.com/gatorwolr/index.jsp"
+        print(f"🌐 Navegando a: {url}")
+        driver.get(url)
+        
+        print("\n🔑 **Credenciales**:")
+        print("Usuario: scordova")
+        print("Pass:    scordova123")
+        
+        print("\n🛑 **INSTRUCCIONES**:")
+        print("1. Inicia sesión manualmente.")
+        print("2. Navega hasta el reporte deseado.")
+        print("3. Cuando estés listo, crea un archivo llamado 'CAPTURE' en esta carpeta (o renombra 'CAPTURE.txt').")
+        print("   (Yo esperaré hasta que ese archivo exista).")
+        
+        # Create a dummy trigger file instructions
+        trigger_file = "CAPTURE"
+        if os.path.exists(trigger_file):
+            os.remove(trigger_file)
+            
+        print(f"⏳ Esperando archivo '{trigger_file}'...")
+        
+        while not os.path.exists(trigger_file):
+            time.sleep(1)
+            
+        print("\n📸 Capturando estado...")
+        timestamp = int(time.time())
+        
+        # Capture Screenshot
+        scr_path = f"wms_debug_{timestamp}.png"
+        driver.save_screenshot(scr_path)
+        print(f"✅ Screenshot guardado: {scr_path}")
+        
+        # Capture HTML
+        html_path = f"wms_source_{timestamp}.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        print(f"✅ Código fuente guardado: {html_path}")
+        
+        print(f"🔗 URL Final: {driver.current_url}")
+        
+        # Clean up trigger
+        if os.path.exists(trigger_file):
+            os.remove(trigger_file)
+            
+        print("\nListo. Cerrando en 5 segundos...")
+        time.sleep(5)
+        
+    except Exception as e:
+        print(f"Error durante la sesión: {e}")
+    finally:
+        try:
+            driver.quit()
+        except:
+            pass
+
+if __name__ == "__main__":
+    record_session()

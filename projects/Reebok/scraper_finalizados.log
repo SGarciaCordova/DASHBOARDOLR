@@ -1,0 +1,41 @@
+2026-02-18 08:13:56,473 - INFO - ====== WebDriver manager ======
+2026-02-18 08:13:57,713 - INFO - Get LATEST chromedriver version for google-chrome
+2026-02-18 08:13:58,126 - INFO - Get LATEST chromedriver version for google-chrome
+2026-02-18 08:13:58,806 - INFO - Driver [C:\Users\Usuario1\.wdm\drivers\chromedriver\win64\144.0.7559.133\chromedriver-win32/chromedriver.exe] found in cache
+2026-02-18 08:13:59,981 - INFO - Navigating to Login Page...
+2026-02-18 08:14:04,454 - INFO - Login Successful.
+2026-02-18 08:14:04,456 - INFO - Opening 'Surtido' screen (e352a00c-66df-438e-b1bc-55ff8610918d)...
+2026-02-18 08:14:08,610 - INFO - Surtido Container found.
+2026-02-18 08:14:08,612 - INFO - Triggering Search for Surtido (Active)...
+2026-02-18 08:14:08,627 - ERROR - Error processing Surtido (Active): Message: javascript error: Cannot set properties of undefined (setting 'cancelBubble')
+  (Session info: chrome=144.0.7559.133)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0x435093
+	0x4350d4
+	0x22b490
+	0x2320b1
+	0x234634
+	0x2b6181
+	0x2981bc
+	0x2b5341
+	0x297f56
+	0x2696c9
+	0x26a484
+	0x687e34
+	0x6830c9
+	0x6a0add
+	0x44db38
+	0x4558ad
+	0x43d848
+	0x43da12
+	0x4275fa
+	0x76865d49
+	0x778fd83b
+	0x778fd7c1
+
+2026-02-18 08:14:08,634 - INFO - Executing JS to switch to 'Embarcados'...
+2026-02-18 08:14:15,565 - INFO - Executing Download Script...
+2026-02-18 08:14:15,578 - INFO - Waiting for download...
+2026-02-18 08:14:16,581 - INFO - Download detected: ['OUTBOUND-SCORDOVA-20260218-081418084-0.csv']
+2026-02-18 08:14:16,581 - INFO - Download successful.

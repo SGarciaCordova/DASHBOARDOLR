@@ -1,0 +1,59 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Git
+.git/
+.gitignore
+
+# Bases de datos locales (se crean en volúmenes Docker)
+*.db
+auth_system/auth.db
+data/wms_data.db
+sgc_system.db
+
+# Logs y archivos de debug
+*.log
+scraper.log
+scraper_aeropuerto.log
+scraper_finalizados.log
+debug_*.txt
+debug_*.py
+debug_output*.txt
+active_ports.txt
+tunnel_log.txt
+cols_dump.txt
+
+# Archivos temporales del scraper
+wms_source_*.html
+wms_inbound_source.html
+wms_outbound_source.html
+*.html
+wms_debug_*.png
+scraper_*.png
+nav_error_*.png
+debug_*.png
+
+# Binarios innecesarios en el contenedor
+cloudflared.exe
+
+# Archivos de desarrollo
+.vscode/
+*.bat
+*.ps1
+Iniciar_Dashboard.bat
+Iniciar_Dashboard.ps1
+RUN_DASHBOARD.bat
+setup_autostart.ps1
+fix_dns.ps1
+
+# Artefactos de IDE
+.idea/

@@ -1,0 +1,11 @@
+credentials.json
+credentials.json.json
+**/credentials*.json
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db*
+.env.local
+.env.*.local
