@@ -8,6 +8,17 @@ import numpy as np
 from datetime import datetime
 from src.kpis.helpers import clean_comparable_dates, clean_numeric_percent, clean_numeric
 
+# Exportar explícitamente _derive_status (el underscore lo excluye de import *)
+__all__ = [
+    'calculate_fill_rate', 'calculate_otd', 'calculate_pipeline_status',
+    '_derive_status',
+    'get_orders_by_client', 'get_status_distribution', 'get_otd_by_client',
+    'get_weekly_throughput', 'get_pipeline_funnel',
+    'get_pct_surtido', 'get_avance_etapa', 'get_cumplimiento_entrega',
+    'get_backlog', 'get_volumen_surtido', 'get_audit_quality',
+    'get_wip_metrics', 'get_desempeno_cliente',
+]
+
 
 # ============================================
 # CORE KPIs (Scalar Values)
