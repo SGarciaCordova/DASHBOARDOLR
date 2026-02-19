@@ -1,9 +1,20 @@
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - dashboard
+    restart: unless-stopped
+
   dashboard:
     build: .
     container_name: antigravity_sgc
-    ports:
-      - "8501:8501"
+    # Ports removed to force traffic through Nginx
+    # ports:
+    #   - "8501:8501"
     env_file:
       - .env
     environment:
