@@ -1,6 +1,6 @@
 # 🚀 Antigravity SGC — Sistema de Gestión y Control de Operaciones 3PL
 
-> **Última actualización del README:** 2026-02-18
+> **Última actualización del README:** 2026-02-19
 
 Plataforma interna de dashboards operativos desarrollada para **operadores logísticos 3PL**. Proporciona visibilidad **en tiempo real** de las operaciones de entrada (Inbound), salida (Outbound), ocupación de almacén y estado de pedidos, consolidando datos de **Google Sheets** y sistemas **WMS externos** (Gator WMS) mediante scrapers automatizados.
 
@@ -111,7 +111,12 @@ Antigravity SGC/
 │
 ├── src/                          # Lógica compartida (usado por OLR + Ubicaciones)
 │   ├── data_loader.py            # Conexión Google Sheets, limpieza de datos, mock data
-│   ├── kpi_engine.py             # ~980 líneas. Todos los KPIs de OLR (Entradas + Surtidos)
+│   ├── kpi_engine.py             # Facade (importa desde src/kpis/) para compatibilidad
+│   ├── kpis/                     # Lógica de KPIs modularizada (Entradas, Surtidos, etc.)
+│   │   ├── entradas.py           # KPIs de Inbound
+│   │   ├── surtidos.py           # KPIs de Outbound
+│   │   ├── comparativas.py       # Lógica WoW y comparativas
+│   │   └── helpers.py            # Funciones auxiliares de cálculo
 │   ├── alert_engine.py           # Motor de alertas (SLA risk, KPI changes, delayed orders)
 │   ├── ml_predictor.py           # Predicción ML de SLA breach (RandomForest/Heuristic)
 │   ├── database.py               # CRUD SQLite para sgc_system.db (cache de Sheets)
@@ -302,7 +307,8 @@ Cada página de dashboard sigue este patrón:
 
 | Archivo | Precaución |
 |---|---|
-| `src/kpi_engine.py` | ~980 líneas. Contiene TODA la lógica de KPIs de OLR. Cambiar una función afecta múltiples dashboards. Siempre verificar qué dashboards la usan antes de editar. |
+| `src/kpis/` | Contiene TODA la lógica de KPIs de OLR modularizada. Cambiar una función aquí afecta múltiples dashboards. |
+| `src/kpi_engine.py` | Facade para compatibilidad. No añadir lógica nueva aquí, usar `src/kpis/`. |
 | `src/data_loader.py` | Cambiar la lógica de limpieza de fechas (`clean_date_series`) o de headers afecta tanto OLR como la sincronización. |
 | `src/ubicaciones_loader.py` | El mapeo de clientes (`CLIENT_INVENTORY_MAP`) y sus IDs (`ON_CLIENT_IDS`, `REEBOK_CLIENT_ID`) son críticos. |
 | `assets/*.js` | Los archivos JS son grandes (hasta 35KB) y contienen lógica de renderizado completa. Un error rompe todo el dashboard visual. |
