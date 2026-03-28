@@ -1,4 +1,4 @@
-# 🚀 Antigravity SGC — Sistema de Gestión y Control de Operaciones 3PL
+# — Sistema de Gestión y Control de Operaciones 3PL
 
 > **Última actualización del README:** 2026-02-19
 
@@ -96,7 +96,7 @@ pymysql, bcrypt, python-dotenv, cryptography, extra-streamlit-components, pyjwt
 
 ```
 Antigravity SGC/
-├── Dashboard.py                  # 🔑 ENTRY POINT — Login + st.navigation()
+├── Dashboard.py                  # ENTRY POINT — Login + st.navigation()
 ├── Template_Dashboard.py         # Plantilla para nuevos dashboards
 ├── bot_launcher.py               # Scheduler (08:00, 13:00, 18:00) para scrapers
 │
@@ -182,7 +182,7 @@ Antigravity SGC/
 
 ---
 
-## 📦 Módulos y Páginas
+## Módulos y Páginas
 
 ### Páginas del Dashboard (definidas en `Dashboard.py`)
 
@@ -214,9 +214,9 @@ Antigravity SGC/
 
 ---
 
-## 📊 Estado Actual de Desarrollo
+##  Estado Actual de Desarrollo
 
-### ✅ Terminado y Funcional
+### Terminado y Funcional
 
 - **Sistema de autenticación** — Login con bcrypt, JWT, cookies persistentes (30 días), bloqueo por intentos fallidos
 - **Dashboard ON (OLR)** — KPIs de Entradas/Surtidos, filtros por fecha, comparación WoW, gráficos interactivos con modales, exportación a Excel
@@ -236,7 +236,7 @@ Antigravity SGC/
 - **Predicción ML de SLA** — `src/ml_predictor.py` implementado con RandomForest + fallback heurístico,etiquetado como "En Mantenimiento" en la UI
 - **Sincronización Sheets → SQLite** — `src/db_sync.py` implementado pero no integrado automáticamente en el flujo principal
 
-### ❌ Pendiente / Sin Implementar
+### Pendiente / Sin Implementar
 
 - **Panel de administración de usuarios** — No existe UI para gestionar usuarios; solo el script `create_admin.py`
 - **Desbloqueo automático de cuentas** — Se bloquean a los 3 intentos fallidos pero no se desbloquean automáticamente
@@ -291,7 +291,7 @@ Cada página de dashboard sigue este patrón:
 
 ## 🤖 Reglas para Agentes IA
 
-### 🔴 NO MODIFICAR (archivos críticos)
+###  NO MODIFICAR (archivos críticos)
 
 | Archivo | Razón |
 |---|---|
@@ -303,7 +303,7 @@ Cada página de dashboard sigue este patrón:
 | `docker-compose.yml` | Configuración de volúmenes y puertos. Cambiar rutas de volúmenes puede borrar datos. |
 | `Dockerfile` | Cambiar la base image puede romper Chrome headless para los scrapers. |
 
-### 🟡 MODIFICAR CON CUIDADO
+###  MODIFICAR CON CUIDADO
 
 | Archivo | Precaución |
 |---|---|
@@ -315,7 +315,7 @@ Cada página de dashboard sigue este patrón:
 | `assets/*.css` | Cambiar variables `:root` afecta colores globales del dashboard correspondiente. |
 | `projects/Reebok/unificador.py` | Los mapeos de columnas CSV → DB deben coincidir con lo que produce el scraper. |
 
-### 🟢 SEGURO PARA MODIFICAR
+### SEGURO PARA MODIFICAR
 
 | Archivo/Área | Notas |
 |---|---|
@@ -337,7 +337,7 @@ Cada página de dashboard sigue este patrón:
 
 ---
 
-## 💻 Cómo Correr el Proyecto Localmente
+##  Cómo Correr el Proyecto Localmente
 
 ### Pre-requisitos
 
@@ -417,7 +417,7 @@ python bot_launcher.py
 
 ---
 
-## 🔐 Variables de Entorno
+##  Variables de Entorno
 
 Copiar `.env.example` a `.env` antes de ejecutar. Variables requeridas:
 
