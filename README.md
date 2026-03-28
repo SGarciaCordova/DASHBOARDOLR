@@ -8,7 +8,7 @@ El sistema está diseñado para correr en la red local del operador y se accede 
 
 ---
 
-## 📋 Tabla de Contenidos
+##  Tabla de Contenidos
 
 - [Stack Tecnológico](#-stack-tecnológico)
 - [Arquitectura General](#-arquitectura-general)
@@ -22,7 +22,7 @@ El sistema está diseñado para correr en la red local del operador y se accede 
 
 ---
 
-## 🛠 Stack Tecnológico
+## Stack Tecnológico
 
 | Capa | Tecnología | Notas |
 |---|---|---|
@@ -50,7 +50,7 @@ pymysql, bcrypt, python-dotenv, cryptography, extra-streamlit-components, pyjwt
 
 ---
 
-## 🏗 Arquitectura General
+##  Arquitectura General
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
