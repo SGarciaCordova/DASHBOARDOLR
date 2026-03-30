@@ -6,7 +6,12 @@ y la nueva batería de KPIs outbound.
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import streamlit as st
+import pytz
 from src.kpis.helpers import clean_comparable_dates, clean_numeric_percent, clean_numeric
+
+# Configuración Horaria
+CDMX_TZ = pytz.timezone('America/Mexico_City')
 
 # Exportar explícitamente _derive_status (el underscore lo excluye de import *)
 __all__ = [
@@ -86,7 +91,7 @@ def _derive_status(df):
     4. 'EN PROCESO' otherwise.
     """
     df = df.copy()
-    now = datetime.now()
+    now = datetime.now(CDMX_TZ).replace(tzinfo=None)
     
     # 1. Clean Dates
     
@@ -189,6 +194,7 @@ def _derive_status(df):
 # CHART DATA - SURTIDOS
 # ============================================
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_orders_by_client(df_surtidos):
     """Orders aggregated by client."""
     if df_surtidos.empty:
@@ -208,6 +214,7 @@ def get_orders_by_client(df_surtidos):
     ).reset_index().sort_values('Total_Piezas', ascending=False)
     return grouped
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_status_distribution(df_surtidos):
     """Distribution using DERIVED Status from dates/progress."""
     if df_surtidos.empty:
@@ -231,6 +238,7 @@ def get_status_distribution(df_surtidos):
     counts.columns = ['Status', 'Cantidad']
     return counts
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_otd_by_client(df_surtidos):
     """OTD performance per client for scatter."""
     df = df_surtidos.copy()
@@ -254,6 +262,7 @@ def get_otd_by_client(df_surtidos):
     ).reset_index()
     return grouped
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_weekly_throughput(df_surtidos):
     """Weekly orders and OTD using SEMANA column."""
     df = df_surtidos.copy()
@@ -288,6 +297,7 @@ def get_weekly_throughput(df_surtidos):
     
     return grouped
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_pipeline_funnel(df_surtidos):
     """Funnel data for pipeline stages."""
     if df_surtidos.empty:
@@ -317,6 +327,7 @@ def get_pipeline_funnel(df_surtidos):
 # NEW KPIs - OUTBOUND (SURTIDOS)
 # ============================================
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_pct_surtido(df_surtidos):
     """
     % Surtido - Fill rate percentage (AVERAGE PER ORDER).
@@ -360,6 +371,7 @@ def get_pct_surtido(df_surtidos):
         'ordenes_validas': len(valid)
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_avance_etapa(df_surtidos):
     """Avance por etapa - Progress through pipeline stages. Only counts non-zero rows."""
     df = df_surtidos.copy()
@@ -390,6 +402,7 @@ def get_avance_etapa(df_surtidos):
         'total_ordenes': len(valid)
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_cumplimiento_entrega(df_surtidos):
     """
     Cumplimiento entrega - On-time delivery. 
@@ -428,6 +441,7 @@ def get_cumplimiento_entrega(df_surtidos):
     
     return {'pct': (on_time / total * 100) if total > 0 else 0, 'on_time': on_time, 'late': total - on_time, 'total': total}
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_backlog(df_surtidos):
     """Backlog - Orders pending or delayed using DERIVED logic."""
     if df_surtidos.empty:
@@ -447,8 +461,7 @@ def get_backlog(df_surtidos):
     # Critical if FECHA A ENTREGAR < Today AND Status != ENTREGADO
     critical = 0
     if 'FECHA A ENTREGAR' in df.columns:
-        from datetime import datetime
-        today = datetime.now()
+        today = datetime.now(CDMX_TZ).replace(tzinfo=None) # Keep naive for clean_comparable_dates column comparison if they are naive
         df['dt_prom'] = clean_comparable_dates(df, 'FECHA A ENTREGAR')
         
         # Critical: Not Delivered AND Promise Date Passed
@@ -479,6 +492,7 @@ def get_backlog(df_surtidos):
         'all_status': status_counts # Pass full dict for charts
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_volumen_surtido(df_surtidos):
     """Volumen surtido - Total volume picked/shipped. Only counts valid data."""
     df = df_surtidos.copy()
@@ -510,6 +524,7 @@ def get_volumen_surtido(df_surtidos):
     
     return {'total': total, 'surtido': surtido, 'ordenes': ordenes, 'by_week': by_week}
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_audit_quality(df_surtidos):
     """
     Outbound KPI: Audit/Compliance Quality Score.
@@ -566,6 +581,7 @@ def get_audit_quality(df_surtidos):
         'breakdown': {f"{k}%": v for k, v in breakdown.items()}
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_wip_metrics(df_surtidos):
     """
     NEW: Metrics for Active/In-Process orders only.
@@ -618,6 +634,7 @@ def get_wip_metrics(df_surtidos):
         'distribution': histogram # New Histogram Data
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_desempeno_cliente(df_surtidos):
     """Desempeño cliente - Performance metrics by client."""
     if 'CLIENTE' not in df_surtidos.columns:

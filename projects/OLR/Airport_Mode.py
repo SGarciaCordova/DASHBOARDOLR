@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 import sys
 import os
 import json
+import pytz
 
-# Adjust path to find src/
-# Current: projects/OLR/Airport_Mode.py
-# Root is 3 levels up
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from src import data_loader, kpi_engine
+# Configuración Horaria
+CDMX_TZ = pytz.timezone('America/Mexico_City')
+
+import src.data_loader as data_loader
+import src.kpi_engine as kpi_engine
 
 # st.set_page_config(
 #     page_title="🏗️ Panel de Operaciones",
@@ -30,7 +31,7 @@ def load_orders():
         return pd.DataFrame(), True
 
 df_surtidos, is_mock = load_orders()
-now = datetime.now()
+now = datetime.now(CDMX_TZ)
 
 def get_col(row, candidates, default=''):
     for c in candidates:
@@ -74,10 +75,11 @@ if not df_surtidos.empty:
 
     # Use the robust dt_promesa calculated in kpi_engine (which includes Time)
     if 'dt_promesa' in df_active.columns:
-        df_active['fecha_promesa'] = df_active['dt_promesa']
+        # Localizamos a CDMX para evitar el error de naive vs aware
+        df_active['fecha_promesa'] = pd.to_datetime(df_active['dt_promesa']).dt.tz_localize(None).dt.tz_localize(CDMX_TZ, ambiguous='infer')
     else:
         # Fallback (should not happen if kpi_engine is updated)
-        df_active['fecha_promesa'] = pd.NaT
+        df_active['fecha_promesa'] = pd.Series(pd.NaT, index=df_active.index).dt.tz_localize(CDMX_TZ)
         
     df_active['progress'] = (df_active['surtido_pzas'] / df_active['total_pzas'] * 100).clip(0, 100)
     df_active['horas_restantes'] = (df_active['fecha_promesa'] - now).dt.total_seconds() / 3600
@@ -191,9 +193,9 @@ html = f"""
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         :root {{
-            --bg: #f8fafc; --card: #ffffff;
-            --blue: #3b82f6; --green: #10b981; --orange: #f59e0b; --red: #ef4444; --purple: #8b5cf6; --cyan: #06b6d4;
-            --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+            --bg: #0e1117; --card: #161b22;
+            --blue: #58a6ff; --green: #3fb950; --orange: #f59e0b; --red: #ef4444; --purple: #d2a8ff; --cyan: #39c5bb;
+            --text: #f0f6fc; --muted: #8b949e; --border: #30363d;
         }}
         body {{ font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }}
         
@@ -202,14 +204,14 @@ html = f"""
         /* LEFT COLUMN: ACTIVE ORDERS */
         .main-col {{ display: flex; flex-direction: column; overflow: hidden; }}
         
-        .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem 1.5rem; background: var(--card); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; }}
+        .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem 1.5rem; background: var(--card); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0; }}
         .header-title {{ font-size: 1.8rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 0.75rem; }}
         .header-time {{ text-align: right; }}
         .header-clock {{ font-size: 2.5rem; font-weight: 800; color: var(--text); line-height: 1; }}
         .header-date {{ font-size: 0.9rem; color: var(--muted); }}
         
         .stats {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; flex-shrink: 0; }}
-        .stat-card {{ background: var(--card); border-radius: 10px; padding: 1rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid; }}
+        .stat-card {{ background: var(--card); border-radius: 10px; padding: 1rem; text-align: center; border: 1px solid var(--border); border-left: 4px solid; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
         .stat-value {{ font-size: 2.2rem; font-weight: 800; }}
         .stat-label {{ font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
         
@@ -223,18 +225,18 @@ html = f"""
             align-content: start;
         }}
         
-        .order-card {{ background: var(--card); border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; border-left: 4px solid var(--blue); position: relative; }}
-        .order-card:hover {{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: var(--blue); }}
+        .order-card {{ background: var(--card); border-radius: 10px; padding: 1.25rem; border: 1px solid var(--border); border-left: 4px solid var(--blue); position: relative; transition: all 0.2s; }}
+        .order-card:hover {{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); border-color: var(--blue); }}
         .order-card.delayed {{ border-left-color: var(--red); animation: pulse 2s infinite; }}
         .order-card.risk {{ border-left-color: var(--orange); }}
-        .order-card.ready {{ border-left-color: var(--green); background: #f0fdf4; }}
+        .order-card.ready {{ border-left-color: var(--green); background: rgba(63, 185, 80, 0.05); }}
         
         @keyframes pulse {{ 0%,100%{{opacity:1}} 50%{{opacity:0.85}} }}
         
         /* RIGHT COLUMN: COMPLETED ORDERS */
         .side-col {{ 
-            background: #f1f5f9; 
-            border-left: 1px solid var(--border); 
+            background: #0d1117; 
+            border: 1px solid var(--border); 
             padding: 1.5rem; 
             border-radius: 12px; 
             display: flex; 
@@ -250,14 +252,15 @@ html = f"""
             border-radius: 8px; 
             padding: 0.8rem; 
             margin-bottom: 0.75rem; 
+            border: 1px solid var(--border);
             border-left: 3px solid var(--green);
             opacity: 0.85;
             transition: all 0.2s;
         }}
-        .comp-card:hover {{ opacity: 1; transform: translateX(-2px); }}
+        .comp-card:hover {{ opacity: 1; transform: translateX(-2px); border-color: var(--green); }}
         .comp-header {{ display: flex; justify-content: space-between; align-items: start; }}
-        .comp-client {{ font-weight: 700; font-size: 0.9rem; color: var(--text); }}
-        .comp-time {{ font-size: 0.75rem; font-weight: 600; color: var(--green); background: #dcfce7; padding: 2px 6px; border-radius: 4px; }}
+        .comp-client {{ font-weight: 700; font-size: 0.9rem; color: #f0f6fc; }}
+        .comp-time {{ font-size: 0.75rem; font-weight: 600; color: #3fb950; background: rgba(63, 185, 80, 0.1); padding: 2px 6px; border-radius: 4px; }}
         .comp-order {{ font-size: 0.75rem; color: var(--muted); margin-top: 2px; }}
         .comp-pzas {{ font-size: 0.75rem; color: var(--text); margin-top: 4px; font-weight: 500; }}
         
@@ -276,24 +279,25 @@ html = f"""
         .progress-fill {{ height: 100%; border-radius: 3px; }}
         .progress-txt {{ font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; display: flex; justify-content: space-between; }}
 
-         /* SCROLLBARS */
+        /* SCROLLBARS */
         ::-webkit-scrollbar {{ width: 6px; }}
         ::-webkit-scrollbar-track {{ background: transparent; }}
-        ::-webkit-scrollbar-thumb {{ background: #cbd5e1; border-radius: 3px; }}
-        ::-webkit-scrollbar-thumb:hover {{ background: #94a3b8; }}
+        ::-webkit-scrollbar-thumb {{ background: #30363d; border-radius: 3px; }}
+        ::-webkit-scrollbar-thumb:hover {{ background: #8b949e; }}
         
         /* Modal & Footer same as before */
-        .modal-overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; }}
+        .modal-overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }}
         .modal-overlay.active {{ display: flex; align-items: center; justify-content: center; }}
-        .modal-box {{ background: var(--card); border-radius: 16px; padding: 2rem; width: 90%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s; }}
+        .modal-box {{ background: var(--card); border-radius: 16px; padding: 2rem; width: 90%; max-width: 500px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); animation: zoomIn 0.2s; }}
         .modal-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }}
-        .modal-title {{ font-size: 1.25rem; font-weight: 700; }}
+        .modal-title {{ font-size: 1.25rem; font-weight: 700; color: #f0f6fc; }}
         .close-btn {{ background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }}
-        .modal-row {{ display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; }}
+        .modal-row {{ display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #30363d; }}
         .modal-label {{ color: var(--muted); font-size: 0.85rem; }}
-        .modal-value {{ font-weight: 600; font-size: 0.9rem; }}
+        .modal-value {{ font-weight: 600; font-size: 0.9rem; color: #f0f6fc; }}
         .modal-footer {{ margin-top: 1.5rem; text-align: right; }}
-        .btn-close {{ background: var(--blue); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }}
+        .btn-close {{ background: var(--blue); color: #0d1117; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; }}
+        @keyframes zoomIn {{ from {{ transform: scale(0.95); opacity: 0; }} to {{ transform: scale(1); opacity: 1; }} }}
     </style>
 </head>
 <body>

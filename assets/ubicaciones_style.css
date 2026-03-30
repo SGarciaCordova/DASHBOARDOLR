@@ -49,7 +49,7 @@ body {
 .topbar {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, #0f172a 100%);
     border-bottom: 1px solid var(--border-color);
-    padding: 12px 24px;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -111,7 +111,7 @@ body {
     height: calc(100vh - 65px);
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 20px 24px 60px;
+    padding: 10px 14px 40px;
     scroll-behavior: smooth;
 }
 

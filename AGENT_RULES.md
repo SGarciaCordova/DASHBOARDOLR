@@ -1,29 +1,24 @@
-# Reglas Permanentes para Agentes IA — Antigravity SGC
+# 📜 Reglas del Agente — Antigravity SGC (v2.1)
 
-Lee este archivo completo antes de ejecutar cualquier tarea en este proyecto.
+## 🛠️ Antes de Operar
+1. **Checkpoint Git**: `git add . && git commit -m "checkpoint: [tarea]"` (Obligatorio antes de cambios).
+2. **Plan de Acción**: Mostrar lista de archivos a modificar y lógica técnica; esperar aprobación `OK`.
+3. **Aislamiento**: Modificar solo un módulo/lógica a la vez.
 
-## Antes de cualquier cambio
+## 🧹 Orden y Limpieza (Crítico)
+1. **No Clutter**: NUNCA dejes archivos `test_*.py`, `check_*.py`, o imágenes/logs de debug en el root o carpetas de proyecto tras finalizar.
+2. **Eliminación**: Si creas un script temporal, bórralo al terminar la tarea.
+3. **Rutas**: Usa rutas absolutas o relativas al root siempre partiendo de la estructura estándar.
 
-1. SIEMPRE ejecutar git add . && git commit -m "checkpoint: antes de [descripción de la tarea]" sin esperar que el usuario lo pida
-2. SIEMPRE mostrar un plan detallado de qué archivos vas a tocar y por qué, y esperar aprobación explícita antes de ejecutar
-3. NUNCA modificar más de un módulo a la vez sin aprobación explícita
+## 🛡️ Seguridad y Core
+*   **Prohibido Tocar (sin permiso)**: `Dashboard.py`, `auth_system/models.py`, `auth_system/database.py`.
+*   **Secretos**: No leas ni muestres contenido de `.env` o `credentials.json`.
+*   **Base de Datos**: Preferir `SQLAlchemy` sobre SQL crudo. El sistema soporta Supabase (Cloud) y SQLite (Local).
 
-## Después de cualquier cambio
+## 🚀 Stack & Componentes
+*   **IA**: Motor de insights en `src/ai_summarizer.py` (Groq/Llama 3.3).
+*   **KPIs**: Lógica en `src/kpis/`, visualización en `projects/`.
+*   **Auth**: JWT + Cookies (Perpetual Login). No modifiques la lógica de tokens sin validar ruteo.
 
-1. Listar todos los archivos modificados
-2. Confirmar que los imports existentes no se rompieron
-3. Preguntar si se debe hacer commit del resultado
-
-## Archivos que NUNCA debes tocar sin permiso explícito
-
-- Dashboard.py — entry point, rompe toda la app
-- auth_system/database.py — motor de BD compartido
-- auth_system/models.py — schema ORM, cambiar borra usuarios
-- auth_system/auth_utils.py — invalida todas las sesiones activas
-- .env y credentials.json — secretos, nunca leer ni mostrar
-- docker-compose.yml — volúmenes de datos en producción
-- assets/*.js — archivos grandes, un error rompe el dashboard visual
-
-## Stack del proyecto
-
-Python 3.11 + Streamlit + SQLite + Selenium + Docker. Ver README.md para contexto completo.
+---
+*Si no estás seguro del impacto de un cambio en el Dashboard principal, PREGUNTA.*

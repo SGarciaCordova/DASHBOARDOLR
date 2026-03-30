@@ -37,6 +37,17 @@ logo_b64 = get_base64_logo()
 # ═══════════════════════════════════════════════════════════════
 #  LOAD DATA & PRE-COMPUTE VIEWS
 # ═══════════════════════════════════════════════════════════════
+
+# Add a native Streamlit toolbar explicitly ABOVE the iframe
+col1, col2 = st.columns([8, 2])
+with col1:
+    last_update = ubicaciones_loader.get_last_update_time()
+    st.markdown(f"**⏱️ Última Actualización Supabase:** `{last_update}`")
+with col2:
+    if st.button("🔄 Actualizar Datos", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+
 df_clients = ubicaciones_loader.load_clients()
 df_locations = ubicaciones_loader.load_locations()
 client_list = ubicaciones_loader.get_client_list(df_clients)
@@ -166,7 +177,7 @@ html_body = f"""
         <img src="data:image/png;base64,{logo_b64}" class="header-logo">
         <div class="header-text">
             <h1>Dashboard de Ubicaciones</h1>
-            <div class="signature">by Sergio Cordova</div>
+            <div class="signature">Datos sincronizados con Supabase</div>
         </div>
     </div>
     {filter_pills_html}

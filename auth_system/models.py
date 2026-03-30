@@ -13,6 +13,7 @@ class User(Base):
     # Seguridad
     failed_attempts = Column(Integer, default=0)
     account_locked = Column(Boolean, default=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
     
     # Auditoría

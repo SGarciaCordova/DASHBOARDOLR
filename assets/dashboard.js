@@ -281,8 +281,9 @@ function showModal(type) {
         'cumpl_72h': () => {
             const d = K.cumpl_72h;
             renderModalChart('cumpl_72h', d);
+            let ai_html = K.ai_insights && K.ai_insights.cumpl_72h ? `<div class="exec-summary" style="background-color:#f0f9ff;border-color:#bae6fd;padding:12px;border-radius:8px;margin-bottom:12px;text-align:left;"><div style="margin-bottom:6px;font-weight:bold;color:#1e40af;font-size:0.9rem;">🧠 AI Executive Insight</div><div style="color:#334155;font-size:0.85rem;line-height:1.4;">${K.ai_insights.cumpl_72h}</div></div>` : "";
             return ['⏰ SLA Compliance (72h)',
-                `<div class="info-box">${d.cumple} de ${d.total} cumplen SLA = ${d.pct.toFixed(1)}%</div><div class="info-section"><div class="info-title">🎯 Meta</div><div class="info-box" style="color:${d.pct >= 95 ? '#10b981' : '#ef4444'}">Meta: 95% | Actual: ${d.pct.toFixed(1)}%</div></div>`,
+                `${ai_html}<div class="info-box">${d.cumple} de ${d.total} cumplen SLA = ${d.pct.toFixed(1)}%</div><div class="info-section"><div class="info-title">🎯 Meta</div><div class="info-box" style="color:${d.pct >= 95 ? '#10b981' : '#ef4444'}">Meta: 95% | Actual: ${d.pct.toFixed(1)}%</div></div>`,
                 'Conteo directo de Columna "CUMPLIMIENTO" (CUMPLE vs NO). Vacíos excluidos.', 'CUMPLIMIENTO 72 HORAS (Columna AK)'];
         },
         'tiempo_ing': () => {
@@ -366,7 +367,9 @@ function showModal(type) {
             // --- Generate Executive Summary Analysis ---
             let executiveSummary = "<div class='exec-summary'><i>Sin suficientes datos históricos para un análisis de tendencia.</i></div>";
 
-            if (d.by_week && d.by_week.length >= 2) {
+            if (K.ai_insights && K.ai_insights.vol_surtido) {
+                executiveSummary = `<div class="exec-summary" style="background-color:#f0f9ff;border-color:#bae6fd;padding:12px;border-radius:8px;margin-bottom:10px;text-align:left;"><div style="margin-bottom:6px;font-weight:bold;color:#1e40af;font-size:0.9rem;">🧠 AI Executive Insight</div><div style="color:#334155;font-size:0.85rem;line-height:1.4;">${K.ai_insights.vol_surtido}</div></div>`;
+            } else if (d.by_week && d.by_week.length >= 2) {
                 const cur = d.by_week[d.by_week.length - 1];
                 const prev = d.by_week[d.by_week.length - 2];
 

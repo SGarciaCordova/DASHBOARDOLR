@@ -1,1 +1,0 @@
-ren CAPTURE.txt CAPTURE

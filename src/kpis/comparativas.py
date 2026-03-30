@@ -5,8 +5,10 @@ Funciones para filtrar datos por período y calcular cambios semana a semana.
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import streamlit as st
 from src.kpis.helpers import clean_comparable_dates
 
+@st.cache_data(ttl=300, show_spinner=False)
 def filter_by_date_range(df, date_col, period='all'):
     """
     Filters dataframe by date range.
@@ -42,6 +44,7 @@ def filter_by_date_range(df, date_col, period='all'):
     filtered = df[(df['_filter_date'] >= start) & (df['_filter_date'] < end)]
     return filtered.drop(columns=['_filter_date'], errors='ignore')
 
+@st.cache_data(ttl=300, show_spinner=False)
 def filter_by_custom_dates(df, date_col, start_date, end_date):
     """
     Filters dataframe by custom date range from calendar picker.
@@ -61,6 +64,7 @@ def filter_by_custom_dates(df, date_col, start_date, end_date):
     filtered = df[(df['_filter_date'] >= start) & (df['_filter_date'] <= end)]
     return filtered.drop(columns=['_filter_date'], errors='ignore')
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_previous_period_data(df, date_col, period='week', ref_date=None):
     """Gets data from the previous period for WoW comparison."""
     if df.empty or date_col not in df.columns:

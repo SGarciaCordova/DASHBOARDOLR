@@ -4,6 +4,7 @@ Uses RandomForest to predict which orders are likely to breach SLA.
 """
 import pandas as pd
 import numpy as np
+import streamlit as st
 from datetime import datetime
 
 # Try to import sklearn, fall back to simple heuristic if not available
@@ -124,18 +125,19 @@ def predict_sla_risk_heuristic(df_entradas, date_col='FECHA DE LLEGADA', hours_t
         'critical_count': len(pending[pending['risk_score'] >= 100])
     }
 
-def predict_sla_risk(df_entradas, model=None, date_col='FECHA DE LLEGADA'):
+@st.cache_data(ttl=300, show_spinner=False)
+def predict_sla_risk(df_entradas, _model=None, date_col='FECHA DE LLEGADA'):
     """
     Main function to predict SLA breach risk.
     Uses ML model if available, otherwise falls back to heuristic.
     """
-    if model is not None and ML_AVAILABLE:
+    if _model is not None and ML_AVAILABLE:
         df = prepare_features(df_entradas, date_col)
         features = ['hours_elapsed', 'day_of_week', 'is_weekend', 'volume']
         X = df[features].fillna(0)
         
         # Get probability of breach
-        probs = model.predict_proba(X)[:, 1] if len(model.classes_) > 1 else np.zeros(len(df))
+        probs = _model.predict_proba(X)[:, 1] if len(_model.classes_) > 1 else np.zeros(len(df))
         df['risk_score'] = probs * 100
         
         high_risk = df[df['risk_score'] >= 50]

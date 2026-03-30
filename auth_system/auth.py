@@ -1,7 +1,7 @@
 import bcrypt
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime
+from datetime import datetime, timedelta
 from .models import User
 
 def hash_password(password: str) -> str:
@@ -28,13 +28,22 @@ def authenticate_user(db: Session, email: str, password: str):
     if not user:
         return None
         
+    # Check if account is locked and if lock has expired
     if user.account_locked:
-        # Aquí se podría implementar lógica de desbloqueo por tiempo
-        return None 
+        if user.locked_until and datetime.now() > user.locked_until:
+            # Auto-unlock
+            user.account_locked = False
+            user.failed_attempts = 0
+            user.locked_until = None
+            db.commit()
+        else:
+            return None 
         
     if verify_password(password, user.password_hash):
         # Reset failed attempts on success
         user.failed_attempts = 0
+        user.account_locked = False
+        user.locked_until = None
         user.last_login = datetime.now()
         db.commit()
         return user
@@ -43,6 +52,7 @@ def authenticate_user(db: Session, email: str, password: str):
         user.failed_attempts += 1
         if user.failed_attempts >= 3:
             user.account_locked = True
+            user.locked_until = datetime.now() + timedelta(minutes=30)
         db.commit()
         return None
 

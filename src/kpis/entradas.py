@@ -5,6 +5,7 @@ Incluye KPIs core, chart data y la nueva batería de KPIs inbound.
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import streamlit as st
 from src.kpis.helpers import clean_comparable_dates, clean_numeric_percent, clean_numeric
 
 
@@ -79,6 +80,7 @@ def get_report_timeliness(df_entradas):
 # CHART DATA - ENTRADAS
 # ============================================
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_lead_time_by_week(df_entradas):
     """Lead time trend using the 'SEMANA' column directly."""
     df = df_entradas.copy()
@@ -104,6 +106,7 @@ def get_lead_time_by_week(df_entradas):
     ).reset_index()
     return trend
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_volume_by_type(df_entradas):
     """Volume breakdown by TIPO DE MERCANCIA. Filters out 0 items."""
     df = df_entradas.copy()
@@ -120,6 +123,7 @@ def get_volume_by_type(df_entradas):
     ).reset_index()
     return grouped
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_compliance_detail(df_entradas):
     """Detailed compliance breakdown for interactive chart."""
     _, valid = calculate_72h_compliance(df_entradas)
@@ -131,6 +135,7 @@ def get_compliance_detail(df_entradas):
     summary.columns = ['Estado', 'Cantidad']
     return summary
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_arrivals_by_day(df_entradas):
     """Count arrivals by day of week using FECHA DE LLEGADA."""
     df = df_entradas.copy()
@@ -153,6 +158,7 @@ def get_arrivals_by_day(df_entradas):
 # NEW KPIs - INBOUND (ENTRADAS)
 # ============================================
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_cumplimiento_72h(df_entradas):
     """Cumplimiento 72 horas - % of reports sent within 72 hours."""
     rate, df = calculate_72h_compliance(df_entradas)
@@ -164,6 +170,7 @@ def get_cumplimiento_72h(df_entradas):
         total = 0
     return {'pct': rate * 100, 'cumple': cumple, 'total': total}
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_tiempo_ingreso(df_entradas):
     """Tiempo de ingreso - Average days from arrival to processing."""
     avg, df = calculate_processing_lead_time(df_entradas)
@@ -171,6 +178,7 @@ def get_tiempo_ingreso(df_entradas):
     max_val = df['lead_time'].max() if not df.empty else 0
     return {'promedio': avg, 'min': min_val, 'max': max_val, 'total': len(df) if not df.empty else 0}
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_volumen_recibido(df_entradas):
     """Volumen recibido - Total pieces and boxes received."""
     pzas_calzado = clean_numeric(df_entradas, 'PIEZAS CALZADO').sum()
@@ -187,6 +195,7 @@ def get_volumen_recibido(df_entradas):
         'pedimentos': pedimentos
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_carga_operativa(df_entradas):
     """Carga operativa - Workload by responsible person."""
     if 'RESPONSABLE DE INGRESO' not in df_entradas.columns:
@@ -201,6 +210,7 @@ def get_carga_operativa(df_entradas):
     grouped.columns = ['Responsable', 'Pedimentos', 'Piezas', 'Cajas']
     return grouped.sort_values('Pedimentos', ascending=False)
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_tiempo_extra_indicador(df_entradas):
     """Tiempo extra - Operations that exceeded 72h threshold."""
     _, df = calculate_72h_compliance(df_entradas)
@@ -223,6 +233,7 @@ def get_tiempo_extra_indicador(df_entradas):
         'total': len(df)
     }
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_eficiencia_descarga(df_entradas):
     """Eficiencia descarga - Based on lead time performance."""
     avg, df = calculate_processing_lead_time(df_entradas)

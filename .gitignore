@@ -1,11 +1,42 @@
+# ==========================================
+# ANTIGRAVITY SGC - GIT EXCLUSIONS
+# ==========================================
+
+# Credentials & Security (IMPORTANT)
+.env
+.env.*
 credentials.json
 credentials.json.json
 **/credentials*.json
+auth_system/*.db
+*.db*
+lockout_registry.json
+
+# Environment/Python
 venv/
 .venv/
 __pycache__/
 *.pyc
-.env
-*.db*
-.env.local
-.env.*.local
+
+# Logs & Error Handling
+*.log
+error.txt
+bot_launcher.log
+inventory_sync.log
+
+# Binary & OS Files
+*.exe
+.vscode/
+.idea/
+.DS_Store
+*.lnk
+
+# Assets & Temp Reports
+*.png
+*.jpg
+*.jpeg
+*.html
+temp_downloads/
+scraper_aeropuerto_error.png
+error_REEBOK.html
+error_REEBOK.png

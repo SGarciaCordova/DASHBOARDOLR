@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+
+
+
+
+
+
+
+
+
+
+
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta http-equiv="Cache-control" content="no-cache">
+		<meta http-equiv="Expires" content="-1">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                
+                    <title>Gator Wms</title>
+                
+		
+
+
+
+<link rel="shortcut icon" href="https://www.soft-gator.com/eimg/softGatorNewAlone.png" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel='stylesheet' type='text/css' href='/elib/css2/bootstrap-5.3.0/bootstrap.min.css' media="none" onload="if(media!='all')media='all'"/>
+
+
+<link rel='stylesheet' type='text/css' href='/gatorwolr/GenCSS?system=wms&amp;ua=0&amp;screenName=main_frames.jsp' />
+
+
+<link rel='stylesheet' type='text/css' href='/elib/css2/fontawesome-pro-7.1.0-web/css/all.min.css' media="none" onload="if(media!='all')media='all'"/>
+
+
+
+
+
+<script language='JavaScript' type='text/javascript' src='/elib/js/jquery/jquery-3.3.1.min.js'></script>
+<script language='JavaScript' type='text/javascript' src='/elib/js/jquery/jquery-ui.min.js'></script>
+
+
+
+
+
+
+
+
+
+    <link rel='stylesheet' type='text/css' href='/elib/css/colors.css' media="none" onload="if(media!='all')media='all'"/>
+
+
+
+  
+	<script language='JavaScript' type='text/javascript' src='/elib/js/bootstrap-5.3.0/bootstrap.bundle.min.js'></script>
+        <script>var bsV = "5";</script>
+
+  
+	<script language='JavaScript' type='text/javascript' src='/elib/js/sweetalert2.all.min.js'></script>
+
+<script language='JavaScript' type='text/javascript' src='/gatorwolr/GenJS?system=wms&amp;ua=0&amp;screenName=main_frames.jsp'></script>
+
+	</head>
+        <body>
+                                
+                                
+
+
+
+
+
+
+
+
+
+<div class="container-fluid g-0"   ><forms id="formaMainFrame"  name="formaMainFrame"  method="POST" autocomplete="true" onsubmit="return false;" ><input id="param1"  name="param1"  value='78359371-fa46-498f-88eb-ac3aa157ed9a'  type="hidden" /><input id="param2"  name="param2"  value='3'  type="hidden" /><input id="param3"  name="param3"  value='3'  type="hidden" /><input id="debugLevel"  name="debugLevel"  value='0'  type="hidden" /><input id="login.userid"  name="login.userid"  value='scordova'  type="hidden" /><input id="snUsuarioId"  name="snUsuarioId"  value='scordova'  type="hidden" /><input id="groupTypes"  name="groupTypes"  required="true"  value='administra_entradas&#39;,&#39;administra_salidas&#39;,&#39;autorizacion_supervisada&#39;,&#39;crear_productos&#39;,&#39;importadores&#39;,&#39;puede_crear_productos&#39;,&#39;utilizar_interfaces'  type="hidden" /><input id="printer"  name="printer"  required="true"  value='none'  type="hidden" /><input id="snSystemId"  name="snSystemId"  value='wms'  type="hidden" /><input id="snIsMobile"  name="snIsMobile"  value='false'  type="hidden" /><input id="snSesionId"  name="snSesionId"  value='5209627BCEF62178557254107EBB7DA8'  type="hidden" /><input id="snScreenId"  name="snScreenId"  value='main_frames.jsp'  type="hidden" /></forms><nav class="navbar navbar-expand border-bottom"   ><a class="navbar-brand"  href="javascript:;" ><img class="img-fluid"  src="/eimg/softGatorNewAlone.png" style="max-width: 100px;" /></a><button class="navbar-toggler white"  type="button" data-bs-toggle="collapse" data-bs-target="#barraNavegacion" aria-controls="barraNavegacion" aria-expanded="false" aria-label="Toggle navigation" ><i class="fas fa-bars fs-4 white"   ></i></button><div id="barraNavegacion"  name="barraNavegacion"  class="collapse navbar-collapse"   ><ul class="navbar-nav"   ><li class="nav-item"   ><div class="dropdown"   ><button id="dropdownAppsButton"  name="dropdownAppsButton"  class="btn btn-light dropdown-toggle font-weight-bold fs-5"  type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ><i class="fas fa-warehouse"   ></i><span  > Gator W</span></button><div class="dropdown-menu"  aria-labelledby="dropdownMenuButton" ><div class="dropdown-header fs-6"   >Aplicaciones</div><hr class="dropdown-divider"   /><a id="db1099"  name="db1099"  class="dropdown-item"  href="javascript:;" ><div class="text-body-secondary small"   >Ventas</div><i class="far fa-money-bill-alt"   ></i><span  >&nbsp;Gator E</span></a><a id="db1102"  name="db1102"  class="dropdown-item"  href="javascript:;" ><div class="text-body-secondary small"   >Helpdesk</div><i class="fas fa-hand-holding-medical"   ></i><span  >&nbsp;Gator H</span></a><a id="db1103"  name="db1103"  class="dropdown-item"  href="javascript:;" ><div class="text-body-secondary small"   >Recursos Humanos</div><i class="fas fa-users"   ></i><span  >&nbsp;Gator RH</span></a><a id="db1100"  name="db1100"  class="dropdown-item"  href="javascript:;" ><div class="text-body-secondary small"   >Compras</div><i class="fas fa-shopping-cart"   ></i><span  >&nbsp;Gator S</span></a><script  >$("#db1099").on("click", function() {openSystem({db_context_path: "gatoreolr", db_conf_file2: "indexOlrErm"});});$("#db1102").on("click", function() {openSystem({db_context_path: "gator-hd-olr", db_conf_file2: "indexOlrHelpdesk"});});$("#db1103").on("click", function() {openSystem({db_context_path: "gatorrholr", db_conf_file2: "indexOlrRh"});});$("#db1100").on("click", function() {openSystem({db_context_path: "gatorsolr", db_conf_file2: "indexOlrStore"});});</script></div></div></li></ul><button class="btn btn-light  ms-auto  me-5"  type="button" data-bs-toggle="offcanvas" data-bs-target="#menu" aria-controls="menu" ><i class="fas fa-bars fs-6"   ></i><span  >&nbsp;</span><span  >menú</span></button></div></nav><div class="row m-md-2"   ><div class="col"   ><a class="text-start text-decoration-none"  href="javascript:;" onclick="doHref('/gatorwolr/forms/choose_server.jsp');" title="Cuenta: Reebok[3]&#10;Bodega: Reebok[3]" >Cuenta: Reebok [3] - Bodega: Reebok [3]</a></div></div><div id="boardContainer"  name="boardContainer"   ><div class="container-fluid"   ><script  >var boardElements = new Object()</script><script  >boardElements["a537e6fa-3d4c-4cb7-b878-7f631a1391f2"] = new Array();</script><div id="tituloa537e6fa-3d4c-4cb7-b878-7f631a1391f2"  name="tituloa537e6fa-3d4c-4cb7-b878-7f631a1391f2"  class="fs-3 board mt-2 mb-2 "   >Indicadores</div><div id="a537e6fa-3d4c-4cb7-b878-7f631a1391f2"  name="a537e6fa-3d4c-4cb7-b878-7f631a1391f2"  class="row board "   ><div class="col-md-6 p-3"   ><div class="card h-100"   ><div class="card-body"   ><div class="card-title fs-5"   ><i class="fa-solid fa-warehouse-full"   ></i><span  >&nbsp;</span><span  >Ubicaciones Ocupadas</span></div><div class="row"   ><div class="col-md-6 text-center"   ><div class="fs-2"   ><i class="fa fa-caret-down yellow"></i>&nbsp;59.72&nbsp;%</div><table class="table small"   ><tbody  ><tr  ><th  >Estatus</th><th  >Cantidad</th><th  >UM</th></tr><tr  ><td class="text-start"   >Ocupadas</td><td class="text-end"   >3,182.00</td><td class="text-end"   >ubicaciones</td></tr><tr  ><td class="text-start"   >Vacías</td><td class="text-end"   >2,146.00</td><td class="text-end"   >ubicaciones</td></tr></tbody></table></div><div id="DOMID3320260311000222038"  name="DOMID3320260311000222038"  class="col-md-6"   ></div></div></div></div><script  >boardElements["a537e6fa-3d4c-4cb7-b878-7f631a1391f2"].push({"data": {"labels": ["Noviembre", "Diciembre", "Enero", "Febrero", "Marzo"], "datasets": [{"data": ["511", "809", "2525", "0", "3182"], "label": "Ubicaciones", "borderWidth": "1"}]}, "type": "bar", "fnToExec": "doGraph2", "elementoId": "65be2fc9-6090-4ac0-997a-cfff9c0b44cb", "globalType": "graph", "containerId": "DOMID3320260311000222038"});</script></div><div class="col-md-6 p-3"   ><div class="card h-100"   ><div class="card-body"   ><div class="card-title fs-5"   ><div class="row"   ><div class="col-md-5"   ><i class="fas fa-boxes"   ></i><span  >&nbsp;</span><span  >Inventario</span></div><div class="col-md-7 text-end"   ><span  >Valor</span><span  >&nbsp;</span><span  >$0.00</span></div></div></div><div class="row"   ><div class="col-md-8 text-center"   ><div class="fs-2"   ><i class="fa fa-caret-up green"></i>&nbsp;99.82&nbsp;%</div><table class="table small"   ><tbody  ><tr  ><th class="text-start"   >Estatus</th><th class="text-start"   >Cantidad</th><th class="text-start"   >UM</th></tr><tr  ><td class="text-start"   >Disponibles</td><td class="text-end"   >173,846.00</td><td class="text-center"   >varias um</td></tr><tr  ><td class="text-start"   >Dañadas</td><td class="text-end"   >0.00</td><td class="text-center"   >varias um</td></tr><tr  ><td class="text-start"   >Otros Estados</td><td class="text-end"   >305.00</td><td class="text-center"   >varias um</td></tr></tbody></table></div><div id="DOMID3320260311000222039"  name="DOMID3320260311000222039"  class="col-md-4"   ></div></div></div></div><script  >boardElements["a537e6fa-3d4c-4cb7-b878-7f631a1391f2"].push({"data": {"labels": ["Disponibles", "Dañados", "Otros Estados"], "datasets": [{"data": ["305.00", null, "173846.00"], "label": "Inventario", "borderWidth": "1"}]}, "type": "pie", "fnToExec": "doGraph2", "elementoId": "27068038-c9df-40e0-a6fd-a644006dc3de", "globalType": "graph", "containerId": "DOMID3320260311000222039"});</script></div><div class="col-md-6 p-3"   ><div class="card h-100"   ><div class="card-body"   ><div class="card-title fs-5"   ><i class="fas fa-shipping-fast"   ></i><span  >&nbsp;</span><span  >Salidas</span></div><div class="row"   ><div class="col-md-6 text-center"   ><div class="fs-2"   ><i class="fa fa-caret-up green"></i>&nbsp;85.66&nbsp;%</div><table class="table"   ><tbody  ><tr  ><th class="text-start"   >Estatus</th><th class="text-center"   >Cantidad</th><th class="text-center"   >UM</th></tr><tr  ><td class="text-start"   >Solicitado</td><td class="text-end"   >40,457.00</td><td class="text-center"   >varias um</td></tr><tr  ><td class="text-start"   >Surtido</td><td class="text-end"   >34,654.00</td><td class="text-center"   >varias um</td></tr></tbody></table></div><div id="DOMID3320260311000222040"  name="DOMID3320260311000222040"  class="col-md-6"   ></div></div></div></div><script  >boardElements["a537e6fa-3d4c-4cb7-b878-7f631a1391f2"].push({"data": {"labels": ["Noviembre", "Diciembre", "Enero", "Febrero", "Marzo"], "datasets": [{"data": ["0", "0", "73885.00", "101198.00", "37033.00"], "label": "Salidas", "borderWidth": "1"}]}, "type": "bar", "fnToExec": "doGraph2", "elementoId": "268290fc-8f5c-4b7b-82a7-18de310300b8", "globalType": "graph", "containerId": "DOMID3320260311000222040"});</script></div><div class="col-md-6 p-3"   ><div class="card h-100"   ><div class="card-body"   ><div class="card-title fs-5"   ><i class="fas fa-truck-loading"   ></i><span  >&nbsp;</span><span  >Entradas</span></div><div class="row"   ><div class="col-md-6 text-center"   ><div class="fs-2"   ><i class="fa fa-caret-up green"></i>&nbsp;100.00&nbsp;%</div><table class="table"   ><tbody  ><tr  ><th  >Pedidos</th><th  >Received</th><th  >UM</th></tr><tr  ><td class="text-end"   >15,260.00</td><td class="text-end"   >15,260.00</td><td class="text-end"   >pieza</td></tr></tbody></table></div><div id="DOMID3320260311000222041"  name="DOMID3320260311000222041"  class="col-md-6"   ></div></div></div></div><script  >boardElements["a537e6fa-3d4c-4cb7-b878-7f631a1391f2"].push({"data": {"labels": ["Noviembre", "Diciembre", "Enero", "Febrero", "Marzo"], "datasets": [{"data": ["0", "0", "309035.00", "78929202825938235.00", "15260.00"], "label": "Entradas", "borderWidth": "1"}]}, "type": "bar", "fnToExec": "doGraph2", "elementoId": "d37c08ae-0a64-48af-a56a-5d669ed2a7ea", "globalType": "graph", "containerId": "DOMID3320260311000222041"});</script></div></div></div></div><div id="menu"  name="menu"  class="offcanvas offcanvas-end show"  tabindex="-1" aria-labelledby="menuLabel" data-bs-scroll="true" style="width: 250px; max-width: 250px;" ><div class="offcanvas-header"   ><img class="img-fluid"  src="/eimg/softGatorNewAlone.png" style="max-width: 100px;" /><button class="btn-close"  data-bs-dismiss="offcanvas" data-bs-target="menu" aria-label="Close" ></button></div><div class="offcanvas-body"   ><ul class="list-group list-group-flush"   ><li class="list-group-item"   ><a id="MENU202603111245291023"  name="MENU202603111245291023"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-cogs"   ></i><span  >&nbsp;</span><span  >Configuración</span></a></li><li class="list-group-item"   ><a id="MENU202603111245291896"  name="MENU202603111245291896"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-sign-in-alt"   ></i><span  >&nbsp;</span><span  >Entradas</span></a></li><li class="list-group-item"   ><a id="MENU202603111245291301"  name="MENU202603111245291301"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-calculator"   ></i><span  >&nbsp;</span><span  >Inventario</span></a></li><li class="list-group-item"   ><a id="MENU202603111245291241"  name="MENU202603111245291241"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-edit"   ></i><span  >&nbsp;</span><span  >Operaciones</span></a></li><li class="list-group-item"   ><a id="MENU202603111245291645"  name="MENU202603111245291645"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-chart-pie"   ></i><span  >&nbsp;</span><span  >Reportes</span></a></li><li class="list-group-item"   ><a id="MENU20260311124529135"  name="MENU20260311124529135"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-boxes"   ></i><span  >&nbsp;</span><span  >Surtido</span></a></li><li class="list-group-item"   ><a id="MENU20260311124529342"  name="MENU20260311124529342"  class="text-secondary text-decoration-none"  href="javascript:;" data-bs-dismiss="offcanvas" data-bs-target="menu" ><i class="fas fa-user"   ></i><span  >&nbsp;</span><span  >Mi Perfil</span></a></li></ul><script  >$("#MENU202603111245291023").on("click", function() {gappMenu.getSubmenu({screen:"7d84d734-3190-433e-a81b-b07099cd8ff0"});});$("#MENU202603111245291896").on("click", function() {gappMenu.getSubmenu({screen:"fcaf5a17-a120-4ee2-800d-ce2c94b341af"});});$("#MENU202603111245291301").on("click", function() {gappMenu.getSubmenu({screen:"d5acbff4-4450-4d1b-8780-fe8da4048f5f"});});$("#MENU202603111245291241").on("click", function() {gappMenu.getSubmenu({screen:"1c247289-ff66-402b-875d-f8fb643dd9c0"});});$("#MENU202603111245291645").on("click", function() {gappMenu.getSubmenu({screen:"72291b97-0e11-4a8e-a90f-8e40d4aa801e"});});$("#MENU20260311124529135").on("click", function() {gappMenu.getSubmenu({screen:"0473cccf-e322-4816-ad4d-db8bf28c735d"});});$("#MENU20260311124529342").on("click", function() {gappMenu.getSubmenu({screen:"f698cf47-b681-491c-b1df-e9b07aaad350"});});</script></div></div></div>
+		
+                        
+                                
+                                
+
+
+
+
+
+
+
+
+
+<div id="datepicker"  name="datepicker"  class="datepicker"   ></div>
+		
+                        
+                                
+                                
+
+
+
+
+
+
+
+
+
+<div id="messages"  name="messages"  class="messages"   ></div>
+		
+                        
+                                
+                                
+
+
+
+
+
+
+
+
+
+<div id="others"  name="others"  class="others"   ></div>
+		
+                        
+                                
+                                
+
+
+
+
+
+
+
+
+
+<div id="processing"  name="processing"  class="processing"   ></div>
+		
+                        
+                                
+                                
+
+
+
+
+
+
+
+
+
+<div id="modalValidaAuthDosPasos"  name="modalValidaAuthDosPasos"  class="modal fade"  tabindex="-1" role="dialog" ><div class="modal-dialog modal-lg"  role="document" ><div class="modal-content"   ><div class="modal-header"   ><h3 id="staticBackdropLabel"  name="staticBackdropLabel"  class="modal-title"   >Autentificación en Dos Pasos</h3><button class="btn btn-close"  data-bs-dismiss="modal" aria-label="Close" ></button></div><div class="modal-body"   ><form id="formValidaAuthDosPasos"  name="formValidaAuthDosPasos"  novalidate  onsubmit="return false;" ><div class="row"   ><div class="col-md-12"   >Para elevar el nivel de seguridad, a partir del 10/04/2026 será requerido un código de verificación que será enviado a su teléfono móvil y a su correo electrónico, por lo que solicitamos su apoyo para actualizar la siguiente información.</div><div class="col-md-12 fs-3 fs-3"   ><span  >Usuario</span><span  >: scordova</span></div></div><div class="col-12 mb-2 "   ><div class="form-group "   ><label id="lblsrCuentaTelefono"  name="lblsrCuentaTelefono"  class="form-label"  for="srCuentaTelefono" >Teléfono</label><input id="srCuentaTelefono"  name="srCuentaTelefono"  required="true"  value=''  class="form-control"  type="text" /><div class="form-text"   >Ingrese un número de teléfono celular para utilizar en esta cuenta.</div></div></div><div class="col-12 mb-2 "   ><div class="form-group "   ><label id="lblsrCuentaEmail"  name="lblsrCuentaEmail"  class="form-label"  for="srCuentaEmail" >Correo electrónico</label><input id="srCuentaEmail"  name="srCuentaEmail"  required="true"  value=''  class="form-control"  type="text" /><div class="form-text"   >Ingrese un correo electrónico para utilizar en esta cuenta.</div></div></div></form></div><div id="btnValidaAuthDosPasos"  name="btnValidaAuthDosPasos"  class="modal-footer"   ><button class="btn btn-success"  type="button" >Enviar</button><button class="btn btn-secondary"  type="button" data-bs-dismiss="modal" aria-label="Close" >Cerrar</button></div></div></div></div>
+		
+                        
+                                
+                                
+
+
+
+
+
+
+
+
+
+<script  >$(document).ready(function(){appConnect({"screenId":"main_frames.jsp"});});</script>
+		
+                        
+                
+        </body>
+</html>

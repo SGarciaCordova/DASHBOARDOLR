@@ -11,6 +11,8 @@ Computes KPIs and chart data for the dashboard.
 import pandas as pd
 import os
 import streamlit as st
+from src.database import get_supabase_engine
+from sqlalchemy import text
 
 # ── Google Sheets URLs ──────────────────────────────────────────────────────
 SHEET_ID = "1Dxg9ANs_sgQu0oU40F2bIMY9Icd7Wpt87sxA-HWA1_M"
@@ -75,16 +77,40 @@ def load_locations():
         return pd.DataFrame(columns=["PASILLO", "ID UBICACION", "UBICACION", "POSICION", "NIVEL"])
 
 
-@st.cache_data(ttl=600, show_spinner="Cargando inventario…")
+@st.cache_data(ttl=300, show_spinner="Cargando inventario desde Supabase…")
 def load_inventory(client_key: str):
-    """Load inventory CSV for a specific client."""
+    """Load inventory from Supabase for a specific client."""
+    engine = get_supabase_engine()
+    if not engine:
+        # Fallback to CSV if no DB connection
+        return load_inventory_from_csv(client_key)
+
+    try:
+        query = text("SELECT * FROM inventario_ubicaciones WHERE UPPER(cliente) = :c")
+        df = pd.read_sql(query, engine, params={"c": client_key.upper()})
+        
+        if df.empty:
+             return load_inventory_from_csv(client_key)
+             
+        # Map DB columns to what the dashboard expects
+        df = df.rename(columns={
+            "sku": "producto_sku",
+            "descripcion": "producto_desc",
+            "cantidad": "inventario_cantidad"
+        })
+        return df
+    except Exception as e:
+        print(f"[ubicaciones_loader] DB Error, using CSV fallback: {e}")
+        return load_inventory_from_csv(client_key)
+
+def load_inventory_from_csv(client_key: str):
+    """Fallback method for local CSV legacy support."""
     filename = CLIENT_INVENTORY_MAP.get(client_key)
     if not filename:
         return pd.DataFrame()
 
     filepath = os.path.join(DATA_DIR, filename)
     if not os.path.exists(filepath):
-        print(f"[ubicaciones_loader] File not found: {filepath}")
         return pd.DataFrame()
 
     try:
@@ -94,7 +120,6 @@ def load_inventory(client_key: str):
         df["inventario_cantidad"] = pd.to_numeric(df["inventario_cantidad"], errors="coerce").fillna(0)
         return df
     except Exception as e:
-        print(f"[ubicaciones_loader] Error loading inventory for {client_key}: {e}")
         return pd.DataFrame()
 
 
@@ -114,6 +139,23 @@ def load_all_inventory():
 # ═══════════════════════════════════════════════════════════════════════════
 #  HELPERS
 # ═══════════════════════════════════════════════════════════════════════════
+
+def get_last_update_time():
+    engine = get_supabase_engine()
+    if not engine:
+        return "Desconocida (Modo CSV)"
+    
+    try:
+        query = text("SELECT MAX(fecha_actualizacion) as last_update FROM inventario_ubicaciones")
+        with engine.connect() as conn:
+            result = conn.execute(query).scalar()
+            if result:
+                # Ya viene como string formateado del robot
+                return str(result)
+            return "Sin datos"
+    except Exception:
+        # Si la columna no existe todavía, mostramos un mensaje amigable
+        return "Sincronización pendiente (Corre el robot primero)"
 
 def excel_col_to_int(col_str):
     """Converts Excel-style column name (A, Z, AA) to integer (1, 26, 27)."""

@@ -1,8 +1,8 @@
 $WshShell = New-Object -comObject WScript.Shell
 $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
 $ShortcutPath = "$StartupPath\Iniciar Dashboard.lnk"
-$TargetScript = "C:\Users\Usuario1\Desktop\Antigravity SGC\Iniciar_Dashboard.ps1"
-$WorkDir = "C:\Users\Usuario1\Desktop\Antigravity SGC"
+$TargetScript = "$PSScriptRoot\Iniciar_Dashboard.ps1"
+$WorkDir = $PSScriptRoot
 
 $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
 $Shortcut.TargetPath = "powershell.exe"

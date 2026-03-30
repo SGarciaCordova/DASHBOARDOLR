@@ -1,8 +1,0 @@
-Checking DOWNLOADS_DIR: c:\Users\Usuario1\Desktop\Antigravity SGC\projects\Reebok\downloads
-Found 1 OUTBOUND files: ['OUTBOUND-SCORDOVA-20260216-101415355-0.csv']
-DB found at c:\Users\Usuario1\Desktop\Antigravity SGC\data\wms_data.db
-Tables: ['sqlite_sequence', 'entradas', 'surtido']
-Total Rows in 'surtido': 98
-Rows with 'DO_TR%' ID in 'surtido': 54
-Sample DO_TR row: ('DO_TR0003364801', 'ST-00033648-IFA3Z147525', '2026-11-02', '12:02:54', 36.0, 31.0, 6, 'SURTIDO', 86.1111111111111)
-Columns: ['docto_id', 'referencia', 'fecha', 'hora', 'cantidad_pedida', 'cantidad_surtida', 'tarimas', 'estado', 'fill_rate']

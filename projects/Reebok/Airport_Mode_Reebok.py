@@ -3,193 +3,320 @@ import streamlit.components.v1 as components
 import sqlite3
 import pandas as pd
 import json
+import base64
 import os
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
+
+# Configuración Horaria
+CDMX_TZ = pytz.timezone('America/Mexico_City')
 
 # ====== DATABASE CONNECTION & CACHING ======
+from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_PATH = os.path.join(BASE_DIR, "data", "wms_data.db")
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    # Mantener para compatibilidad si se usa directamente, pero preferimos SQLAlchemy
+    import sqlite3
+    conn = sqlite3.connect(os.path.join(BASE_DIR, "data", "wms_data.db"))
     conn.row_factory = sqlite3.Row
     return conn
 
 @st.cache_data(ttl=300, show_spinner=False)
-def load_airport_data(db_path_mtime):
-    conn = get_db_connection()
+def load_airport_active_data():
     data = {}
-    
-    # 1. Active Orders (wms_aeropuerto view)
     try:
-        try:
-            active_raw = conn.execute("SELECT * FROM wms_aeropuerto").fetchall()
-        except Exception:
-            active_raw = []
-        data['raw_active'] = [dict(row) for row in active_raw]
-    except:
+        # 1. Active Orders (wms_aeropuerto view) en Supabase
+        query = text("SELECT * FROM wms_aeropuerto")
+        with engine.connect() as conn:
+            df = pd.read_sql(query, conn)
+        data['raw_active'] = df.to_dict(orient='records')
+    except Exception as e:
+        st.error(f"Error loading active data from Supabase: {e}")
         data['raw_active'] = []
 
-    # 2. Shipped Orders (Last 50)
+    # Obtener fecha de última sincronización desde audit_logs (Supabase)
     try:
-        shipped = conn.execute("SELECT * FROM inbound_scord_despachados_raw ORDER BY fecha DESC LIMIT 50").fetchall()
-        data['shipped'] = [dict(row) for row in shipped]
-    except:
+        # Buscamos la última vez que el scraper de Airport Mode inició o terminó con éxito
+        log_query = text("""
+            SELECT timestamp 
+            FROM audit_logs 
+            WHERE detail LIKE '%Airport Mode%'
+              AND status = 'OK'
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        """)
+        with engine.connect() as conn:
+            res = conn.execute(log_query).fetchone()
+            if res:
+                # Convertir UTC (Supabase) a CDMX
+                last_utc = res[0]
+                if last_utc.tzinfo is None:
+                    last_utc = pytz.utc.localize(last_utc)
+                last_upd = last_utc.astimezone(CDMX_TZ)
+                data['last_update'] = last_upd.strftime('%d/%m/%Y %H:%M')
+            else:
+                # Fallback a la hora actual solo si nunca ha corrido
+                data['last_update'] = datetime.now(CDMX_TZ).strftime('%d/%m/%Y %H:%M')
+    except Exception:
+        data['last_update'] = datetime.now(CDMX_TZ).strftime('%d/%m/%Y %H:%M')
+        
+    return data
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_airport_shipped_data():
+    data = {}
+    try:
+        # 2. Salidas Recientes desde Supabase (últimos 30 registros de surtido)
+        query = text("SELECT * FROM surtido ORDER BY fecha DESC, hora DESC LIMIT 30")
+        with engine.connect() as conn:
+            df = pd.read_sql(query, conn)
+        data['shipped'] = df.to_dict(orient='records')
+    except Exception as e:
+        st.error(f"Error loading shipped data from Supabase: {e}")
         data['shipped'] = []
     
-    # Last Update
-    data['last_update'] = datetime.fromtimestamp(os.path.getmtime(DB_PATH)).strftime('%d/%m/%Y %H:%M') if os.path.exists(DB_PATH) else datetime.now().strftime('%d/%m/%Y %H:%M')
-    
-    conn.close()
     return data
 
 def process_data(raw_active, raw_shipped):
-    now = datetime.now()
+    now = datetime.now(CDMX_TZ)
     
     demoras = []
     riesgo = []
     a_tiempo = []
     pending = [] 
+    ready = []
     
     for order in raw_active:
         estado = str(order.get('estado', '')).upper().strip()
-        f_str = str(order.get('fecha', '')).strip()
-        h_str = str(order.get('hora', '00:00:00')).strip() or '00:00:00'
+        f_ingreso_raw = order.get('fecha', '')
+        f_entrega_raw = order.get('fecha_entrega', '')
+        h_ingreso_raw = order.get('hora', '00:00:00')
         
-        if 'T' in f_str: dt_str = f_str.split('T')[0]
-        else: dt_str = f_str
-        
-        order['fecha'] = dt_str
-        order['hora'] = h_str
+        # Omitir fecha_cancelación para evitar ruido
+        order.pop('fecha_cancelacion', None)
+
+        # 1. Parsear Fecha Ingreso (Punto de partida del SLA)
+        try:
+            dt_ingreso = pd.to_datetime(f"{str(f_ingreso_raw).split(' ')[0]} {str(h_ingreso_raw)}")
+            if dt_ingreso.tzinfo is None:
+                dt_ingreso = CDMX_TZ.localize(dt_ingreso)
+        except:
+            dt_ingreso = now
+
+        # 2. Determinar el Deadline (FECHA ENTREGA o SLA 36h)
+        if f_entrega_raw and str(f_entrega_raw).lower() != 'none' and str(f_entrega_raw).strip() != '':
+            try:
+                deadline = pd.to_datetime(f_entrega_raw)
+                if deadline.tzinfo is None:
+                    deadline = CDMX_TZ.localize(deadline)
+            except:
+                deadline = dt_ingreso + timedelta(hours=36)
+        else:
+            # Fallback a SLA de 36 horas desde la creación
+            deadline = dt_ingreso + timedelta(hours=36)
+
+        if estado == 'SURTIDO':
+            estado = 'LISTAS PARA EMBARQUE'
+            
+        # Preparar campos para la visualización
+        order['fecha'] = dt_ingreso.strftime("%d/%m/%Y")
+        order['hora'] = dt_ingreso.strftime("%H:%M")
         order['estado'] = estado
+        order['cliente'] = str(order.get('cliente', '') or '')
         
+        # Completitud
         try:
             qty_req = float(order.get('cantidad_pedida', 0) or 0)
             qty_pick = float(order.get('cantidad_surtida', 0) or 0)
-            pct = (qty_pick / qty_req * 100) if qty_req > 0 else 0
+            pct = (qty_pick / qty_req * 100.0) if qty_req > 0 else float(str(order.get('tasa_de_cumplimiento', '0')).replace('%', '').strip() or 0)
         except:
             pct = 0
         order['pct_completitud'] = pct
 
+        # Filtrar estados terminados
+        if estado in ['EMBARCADO', 'COMPLETO', 'COMPLETADO', 'FINALIZADO', 'CERRADO', 'CLOSED']:
+            continue
+            
+        # Categorización por Proximidad/SLA
+        order['_deadline_nice'] = deadline.strftime("%d/%m %H:%M")
+        
+        if estado == 'LISTAS PARA EMBARQUE' or pct >= 99:
+            order['_hours_left'] = None
+            ready.append(order)
+            continue
+
         if estado == 'INGRESADO':
             pending.append(order)
             continue
-            
-        if estado == 'SURTIDO':
-            # Treat as completed/shipped
-            shipped_order = order.copy()
-            # Normalize date for shipped display
-            f_val = str(shipped_order.get('fecha', '')).strip()
-            h_val = str(shipped_order.get('hora', '00:00:00')).strip()
-            shipped_order['fecha'] = f"{f_val} {h_val}"
-            raw_shipped.append(shipped_order)
-            continue
 
-        # If it reaches here, it's 'SURTIENDOSE' or other active state
+        # Lógica de cálculo de horas restantes
         try:
-            full_str = f"{dt_str} {h_str}"
-            try: deadline = datetime.strptime(full_str, "%Y-%m-%d %H:%M:%S")
-            except: 
-                try: deadline = datetime.strptime(full_str, "%Y-%m-%d %H:%M")
-                except: deadline = datetime.combine(datetime.strptime(dt_str, "%Y-%m-%d").date(), datetime.max.time())
+            # Asegurar que deadline sea offset-aware
+            if deadline.tzinfo is None:
+                deadline = CDMX_TZ.localize(deadline)
 
             diff = deadline - now
             hours_left = diff.total_seconds() / 3600.0
             order['_hours_left'] = hours_left
-            order['_deadline_nice'] = deadline.strftime("%d/%m %H:%M")
             
             if hours_left < 0: demoras.append(order)
             elif hours_left <= 4: riesgo.append(order)
             else: a_tiempo.append(order)
-        except:
+        except Exception:
             order['_hours_left'] = 999
-            order['_deadline_nice'] = f"{dt_str} {h_str}"
             a_tiempo.append(order)
 
     processed_shipped = []
     for s in raw_shipped:
-        s_estado = str(s.get('estado', '')).upper().strip()
-        if s_estado == 'SURTIDO':
-            s['fecha'] = str(s.get('fecha', '')).replace('T', ' ').split('.')[0]
-            processed_shipped.append(s)
+        # Limpieza de campos innecesarios y formateo
+        s.pop('fecha_cancelacion', None)
+        
+        f_val = str(s.get('fecha', '')).split('T')[0]
+        h_val = str(s.get('hora', ''))
+        
+        try:
+            dt_s = pd.to_datetime(f"{f_val} {h_val}")
+            s['fecha'] = dt_s.strftime("%Y-%m-%d %H:%M")
+        except:
+            s['fecha'] = f"{f_val} {h_val}".strip() or "Sin fecha"
+        
+        client_val = s.get('cliente')
+        if client_val is None or str(client_val).lower().strip() in ['none', '']:
+            s['cliente'] = str(s.get('referencia', s.get('docto_id', 'SIN NOMBRE')))
+        else:
+            s['cliente'] = str(client_val)
+        
+        try:
+            qty_req = float(s.get('cantidad_pedida', 0) or 0)
+            qty_pick = float(s.get('cantidad_surtida', 0) or 0)
+            fill_rate = float(s.get('fill_rate', 0) or (qty_pick / qty_req * 100 if qty_req > 0 else 0))
             
+            s['completion_text'] = f"{int(qty_pick)} de {int(qty_req)} pzas"
+            s['pct_text'] = f"{fill_rate:.1f}%"
+            s['pct_completitud'] = fill_rate
+        except:
+            s['completion_text'] = "N/D"
+            s['pct_text'] = "0%"
+            s['pct_completitud'] = 0
+            
+        processed_shipped.append(s)
+
     return {
         'demoras': demoras,
         'riesgo': riesgo,
         'a_tiempo': a_tiempo,
         'pending': pending,
+        'ready': ready,
         'shipped': processed_shipped
     }
 
 def show_airport_mode():
-    # Hide Streamlit chrome
-    st.markdown("""
-    <style>
-        #MainMenu, footer, .stDeployButton { display: none !important; }
-    </style>
-    """, unsafe_allow_html=True)
+    # Hide Streamlit chrome - Ahora gestionado globalmente en Dashboard.py
+    # st.markdown("""
+    # <style>
+    #     #MainMenu, footer, .stDeployButton { display: none !important; }
+    # </style>
+    # """, unsafe_allow_html=True)
     
     # st.title("🏗️ Panel de Operaciones Reebok") # Removed to use the one in the topbar
 
 
     # Refresh Button
-    if st.button("🔄 Refrescar Datos Aeropuerto"):
+    st.write("")
+    if st.button("🔄 Actualizar Datos", use_container_width=True):
+        st.toast("🚀 Iniciando conexión con el WMS...")
         status_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scraper_status.json")
         try:
             with open(status_file, "w") as f:
-                json.dump({"message": "Iniciando...", "percent": 0, "status": "starting"}, f)
+                json.dump({"message": "Iniciando scraper...", "percent": 0, "status": "starting"}, f)
         except: pass
             
         scraper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wms_aeropuerto_scraper.py")
-        process = subprocess.Popen([sys.executable, scraper_path], shell=False)
         
-        pbar = st.progress(0)
-        stext = st.empty()
+        # Pass user email to scraper via env var
+        env = os.environ.copy()
+        user_info = st.session_state.get("user", {})
+        env["TRIGGERED_BY"] = user_info.get("email", "Unknown") if isinstance(user_info, dict) else getattr(user_info, "email", "Unknown")
         
-        while True:
-            if process.poll() is not None: break
-            try:
-                if os.path.exists(status_file):
-                    with open(status_file, "r") as f:
-                        d = json.load(f)
-                        pbar.progress(d.get("percent", 0))
-                        stext.info(f"{d.get('message', '')}")
-            except: pass
-            time.sleep(1)
-        
-        process.wait()
-        if process.returncode == 0:
-            st.success("Actualizado")
-            load_airport_data.clear()
-            st.rerun()
-        else:
-            st.error("Error al actualizar")
+        with st.status("🏗️ Sincronizando con el servidor...", expanded=True) as status:
+            process = subprocess.Popen([sys.executable, scraper_path], shell=False, env=env)
+            
+            pbar = st.progress(0)
+            stext = st.empty()
+            
+            last_msg = ""
+            last_pct = -1
+            while True:
+                if process.poll() is not None: break
+                try:
+                    if os.path.exists(status_file):
+                        with open(status_file, "r") as f:
+                            d = json.load(f)
+                            msg = d.get('message', '')
+                            percent = d.get('percent', 0)
+                            
+                            if msg != last_msg or percent != last_pct:
+                                stext.info(f"📍 {percent}% — {msg}")
+                                last_msg = msg
+                                last_pct = percent
+                            
+                            pbar.progress(percent)
+                            
+                            if d.get("status") == "error":
+                                status.update(label="❌ Error en la sincronización", state="error")
+                                break
+                except: pass
+                time.sleep(0.5) # Polling más rápido
+            
+            process.wait()
+            if process.returncode == 0:
+                status.update(label="✅ Sincronización Exitosa", state="complete", expanded=False)
+                st.success("Datos actualizados.")
+                load_airport_active_data.clear()
+                load_airport_shipped_data.clear()
+                time.sleep(1)
+                st.rerun()
+            else:
+                status.update(label="❌ Sincronización Fallida", state="error")
+                st.error("Hubo un error al descargar los datos.")
 
     # Load Data
-    try: db_mtime = os.path.getmtime(DB_PATH)
-    except: db_mtime = 0
-    app_data = load_airport_data(db_mtime)
+    # db_mtime removed as we use Supabase now, cache ttl ensures refresh
+    
+    active_data = load_airport_active_data()
+    shipped_data = load_airport_shipped_data()
 
-    processed = process_data(app_data.get('raw_active', []), app_data.get('shipped', []))
-
+    processed = process_data(active_data.get('raw_active', []), shipped_data.get('shipped', []))
+    total_active = len(processed['demoras']) + len(processed['riesgo']) + len(processed['a_tiempo']) + len(processed['pending']) + len(processed['ready'])
+    
     # Metrics for JSON
     json_data = {
         'demoras': processed['demoras'],
         'riesgo': processed['riesgo'],
         'a_tiempo': processed['a_tiempo'],
         'pending': processed['pending'],
+        'ready': processed['ready'],
         'shipped': processed['shipped'],
         'counts': {
             'demoras': len(processed['demoras']),
             'riesgo': len(processed['riesgo']),
             'a_tiempo': len(processed['a_tiempo']),
-            'shipped': len(processed['shipped'])
+            'ready': len(processed['ready']),
+            'pending': len(processed['pending']),
+            'shipped': len(processed['shipped']),
+            'active': total_active
         },
-        'last_update': app_data['last_update']
+        'last_update': active_data['last_update']
     }
 
     # Load Assets
@@ -203,111 +330,143 @@ def show_airport_mode():
         css, js = "", ""
 
     # Inject Data
-    js = js.replace('/*DATA_PLACEHOLDER*/ {}', json.dumps(json_data))
+    class DecimalEncoder(json.JSONEncoder):
+        def default(self, obj):
+            import decimal
+            import math
+            from datetime import date, time, datetime
+            # Handle Decimal (from Postgres/BigQuery)
+            if isinstance(obj, decimal.Decimal):
+                return float(obj)
+            # Handle Date/Time (from Postgres/Pandas)
+            if isinstance(obj, (datetime, date, time)):
+                return obj.isoformat()
+            # Handle potential Numpy/Pandas/Float NaN or Infinity
+            if isinstance(obj, float):
+                if math.isnan(obj) or math.isinf(obj):
+                    return None
+            try:
+                import numpy as np
+                if isinstance(obj, (np.floating, np.float64, np.float32)):
+                    if np.isnan(obj) or np.isinf(obj):
+                        return None
+                    return float(obj)
+            except: pass
+            
+            return super(DecimalEncoder, self).default(obj)
+
+    # Use a more flexible replacement in case of minor spacing differences
+    json_str = json.dumps(json_data, cls=DecimalEncoder)
+    # The file has: const K = /*DATA_PLACEHOLDER*/ {};
+    placeholder = '/*DATA_PLACEHOLDER*/ {}'
+    if placeholder in js:
+        js = js.replace(placeholder, json_str)
+    else:
+        # Fallback to a broader match if the previous one failed
+        # Using string replacement instead of re.sub for security with backslashes
+        import re
+        match = re.search(r'/\*DATA_PLACEHOLDER\*/\s*\{\}', js)
+        if match:
+            target = match.group(0)
+            js = js.replace(target, json_str)
+        else:
+            # Last ditch effort if spacing is very different
+            js = f"const K = {json_str};\n" + js
 
     # Parse last update for display
     try:
-        last_upd_dt = datetime.strptime(app_data['last_update'], '%d/%m/%Y %H:%M')
+        last_upd_dt = datetime.strptime(active_data['last_update'], '%d/%m/%Y %H:%M')
         time_display = last_upd_dt.strftime('%H:%M')
-        date_display = last_upd_dt.strftime('%d/%m/%Y')
+        date_display = last_upd_dt.strftime('%A %d %b').capitalize()
     except:
         time_display = "--:--"
         date_display = "---"
 
+    # Load Logo
+    logo_path = os.path.join(ASSETS_DIR, 'reebok_logo.png')
+    logo_base64 = ""
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            logo_base64 = base64.b64encode(f.read()).decode()
+    
+    logo_img_html = f'<img src="data:image/png;base64,{logo_base64}" class="header-logo">' if logo_base64 else '<span style="font-size:2rem;">🏗️</span>'
 
-    # HTML Template
+    # HTML Template — OLR-Style 2-Column Layout
     html_content = f"""
     <!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="refresh" content="1800">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
             {css}
         </style>
     </head>
     <body>
-        <div class="topbar">
-            <div class="header-title">
-                <span style="font-size:2rem;">✈️</span> Airport Mode Reebok
+        <div class="container-fluid">
+            <!-- LEFT COLUMN: ACTIVE -->
+            <div class="main-col">
+                <div class="header">
+                    <div class="header-title">{logo_img_html} Torre de Control</div>
+                    <div class="header-time">
+                        <div class="header-clock">{time_display}</div>
+                        <div class="header-date">{date_display}</div>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-card" style="border-left-color: var(--red);" onclick="showCategoryModal('demoras')">
+                        <div class="stat-value" style="color: var(--red);">{len(processed['demoras'])}</div>
+                        <div class="stat-label" style="color: var(--red);">⚠️ Demorados</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--orange);" onclick="showCategoryModal('riesgo')">
+                        <div class="stat-value" style="color: var(--orange);">{len(processed['riesgo'])}</div>
+                        <div class="stat-label" style="color: var(--orange);">⏰ Riesgo</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--blue);" onclick="showCategoryModal('atiempo')">
+                        <div class="stat-value" style="color: var(--blue);">{len(processed['a_tiempo'])}</div>
+                        <div class="stat-label" style="color: var(--blue);">✓ A Tiempo</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--purple);" onclick="showCategoryModal('pending')">
+                        <div class="stat-value" style="color: var(--purple);">{len(processed['pending'])}</div>
+                        <div class="stat-label" style="color: var(--purple);">📥 Ingresado</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--green);" onclick="showCategoryModal('ready')">
+                        <div class="stat-value" style="color: var(--green);">{len(processed['ready'])}</div>
+                        <div class="stat-label" style="color: var(--green);">🚀 Listas para EMBARQUE</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--cyan);" onclick="showCategoryModal('active')">
+                        <div class="stat-value" style="color: var(--cyan);">{total_active}</div>
+                        <div class="stat-label" style="color: var(--cyan);">📋 Totales</div>
+                    </div>
+                </div>
+
+                <div class="order-grid" id="orderGrid"></div>
             </div>
-            <div class="header-time">
-                <div class="header-clock">{time_display}</div>
-                <div class="header-date">{date_display}</div>
-                <div class="tag green" style="display: inline-block; margin-top: 5px;">● EN LÍNEA</div>
+
+            <!-- RIGHT COLUMN: COMPLETED -->
+            <div class="side-col">
+                <div class="side-title">✅ Salidas Recientes</div>
+                <div class="completed-list" id="completedList"></div>
+                <div style="margin-top: auto; padding-top: 1rem; text-align: center; font-size: 0.7rem; color: var(--muted);">
+                    Actualizado: {active_data['last_update']}
+                </div>
             </div>
         </div>
 
-        <div class="container">
-            <!-- METRIC CARDS -->
-            <div class="section-title">📊 Resumen Operativo</div>
-            <div class="grid-4">
-                <div class="card" onclick="showModal('demoras')">
-                    <div class="card-header"><div class="card-label">Demoras</div><div class="card-icon" style="background:#fee2e2;">🔥</div></div>
-                    <div class="card-value red">{len(processed['demoras'])}</div>
-                    <div class="card-footer">Vencidos (< 0h)</div>
-                </div>
-                <div class="card" onclick="showModal('riesgo')">
-                    <div class="card-header"><div class="card-label">En Riesgo</div><div class="card-icon" style="background:#ffedd5;">⚠️</div></div>
-                    <div class="card-value orange">{len(processed['riesgo'])}</div>
-                    <div class="card-footer">Críticos (0 - 4h)</div>
-                </div>
-                <div class="card" onclick="showModal('atiempo')">
-                    <div class="card-header"><div class="card-label">A Tiempo</div><div class="card-icon" style="background:#dcfce7;">✅</div></div>
-                    <div class="card-value green">{len(processed['a_tiempo'])}</div>
-                    <div class="card-footer">En órden (> 4h)</div>
-                </div>
-                <div class="card" onclick="showModal('shipped')">
-                    <div class="card-header"><div class="card-label">Salidas</div><div class="card-icon" style="background:#dbeafe;">🛫</div></div>
-                    <div class="card-value blue">{len(processed['shipped'])}</div>
-                    <div class="card-footer">Últimas 50 salidas</div>
-                </div>
-            </div>
-
-            <!-- LISTS SECTION -->
-            <div class="list-container">
-                <!-- Left Column: Critical & Pending -->
-                <div class="list-col">
-                    <div class="list-header">
-                         <span>⚠️ Críticos & Riesgo</span>
-                         <span class="tag orange">{len(processed['demoras']) + len(processed['riesgo'])}</span>
-                    </div>
-                    <div class="list-body" id="list-critical">
-                        <!-- JS Injected -->
-                    </div>
-                    <!-- Pending Sub-section -->
-                    <div class="list-header" style="border-top:1px solid #e2e8f0; margin-top:auto;">
-                        <span>📋 Pendientes (Ingresados)</span>
-                        <span class="tag blue" style="background:#f1f5f9; color:#475569;">{len(processed['pending'])}</span>
-                    </div>
-                    <div class="list-body" id="list-pending" style="height:35%;">
-                         <!-- JS Injected -->
-                    </div>
-                </div>
-
-                <!-- Right Column: Recent Shipments -->
-                <div class="list-col">
-                    <div class="list-header">
-                        <span>🛫 Salidas Recientes</span>
-                        <span class="tag blue">{len(processed['shipped'])}</span>
-                    </div>
-                    <div class="list-body" id="list-shipped">
-                        <!-- JS Injected -->
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- MODAL -->
+        <!-- Modal -->
         <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
             <div class="modal-box" id="modalBox" style="display:none;" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <div class="modal-title" id="modalTitle">Detalle</div>
+                    <div class="modal-title" id="modalTitle">Detalle de Orden</div>
                     <button class="close-btn" onclick="closeModal()">×</button>
                 </div>
                 <div id="modalContent"></div>
+                <div class="modal-footer">
+                    <button class="btn-close" onclick="closeModal()">Cerrar</button>
+                </div>
             </div>
         </div>
 
@@ -318,7 +477,7 @@ def show_airport_mode():
     </html>
     """
 
-    components.html(html_content, height=1000, scrolling=False)
+    components.html(html_content, height=900, scrolling=True)
 
-if __name__ == "__main__":
-    show_airport_mode()
+# Solo se ejecuta si se corre directamente, pero st.navigation corre el script completo
+show_airport_mode()

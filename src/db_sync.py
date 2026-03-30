@@ -1,8 +1,9 @@
 from src import data_loader
 from src import database
+from src.database import log_activity
 import pandas as pd
 
-def sync_sheets_to_db(sheet_name="REPORTE MR 2026 RICARDO"):
+def sync_sheets_to_db(sheet_name="REPORTE MR 2026 RICARDO", user_email="SYSTEM"):
     """
     Fetches data from Google Sheets and saves it to local SQLite DB.
     Returns: (success, message)
@@ -66,7 +67,9 @@ def sync_sheets_to_db(sheet_name="REPORTE MR 2026 RICARDO"):
         database.save_dataframe_to_db(df_entradas, 'entradas')
         database.save_dataframe_to_db(df_surtidos, 'surtidos')
         
-        return True, f"Sincronización Exitosa. Entradas: {len(df_entradas)}, Surtidos: {len(df_surtidos)}"
+        msg = f"Sincronización Exitosa. Entradas: {len(df_entradas)}, Surtidos: {len(df_surtidos)}"
+        log_activity(user_email, "SYNC", msg)
+        return True, msg
         
     except Exception as e:
         return False, f"Error durante la sincronización: {str(e)}"

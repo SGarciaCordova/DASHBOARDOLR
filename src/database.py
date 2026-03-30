@@ -1,6 +1,8 @@
 import sqlite3
 import pandas as pd
 import os
+from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
 
 DB_NAME = 'sgc_system.db'
 
@@ -76,3 +78,40 @@ def get_last_sync_time(table_name="entradas"):
         return None
     finally:
         conn.close()
+
+def get_supabase_engine():
+    """Returns an SQLAlchemy engine for Supabase."""
+    load_dotenv()
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        return None
+    return create_engine(db_url)
+
+def log_activity(user_email, event_type, detail, status="OK", ip=None):
+    """
+    Centralized function to log activity to Supabase audit_logs table.
+    event_type values: LOGIN, LOGOUT, SCRAPER_RUN, SCRAPER_ERROR, SYNC, PERMISSION_CHANGE, EXPORT
+    """
+    engine = get_supabase_engine()
+    if not engine:
+        print("❌ Skip activity log: DATABASE_URL not set")
+        return False
+    
+    try:
+        with engine.connect() as conn:
+            sql = text("""
+                INSERT INTO audit_logs (user_email, event_type, detail, status, ip_address)
+                VALUES (:email, :type, :detail, :status, :ip)
+            """)
+            conn.execute(sql, {
+                "email": user_email,
+                "type": event_type,
+                "detail": detail,
+                "status": status,
+                "ip": ip
+            })
+            conn.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Error logging activity: {e}")
+        return False
