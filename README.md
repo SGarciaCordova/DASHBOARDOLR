@@ -1,4 +1,4 @@
-# — Sistema de Gestión y Control de Operaciones 3PL
+# — Control Tower by SGC 
 
 > **Última actualización del README:** 2026-02-19
 
