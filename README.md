@@ -15,7 +15,8 @@ Este ecosistema integra datos en tiempo real de múltiples fuentes (WMS Gator, S
 El sistema opera bajo un arquitectura **ETL (Extract, Transform, Load)** de alta disponibilidad:
 
 1.  **🤖 Ingesta Robótica (Selenium/Automated Bots):** 
-    Utilizamos bots programados en Python con **Selenium (Chromium)** que acceden a portales WMS y SCORD. Estos simulan la navegación humana, descargan reportes crudos y los procesan en memoria antes de cualquier inserción.
+    Utilizamos bots programados en Python con **Selenium (Chromium)** que acceden a portales WMS.
+     Estos simulan la navegación humana, descargan reportes crudos y los procesan en memoria antes de cualquier inserción.
 2.  **🧠 Capa de Datos (Supabase / PostgresSQL):** 
     A diferencia de un archivo local, usamos **Supabase** como DB relacional centralizada. Esto permite que varios usuarios consulten el dashboard simultáneamente con datos consistentes y persistencia de auditoría.
 3.  **👁️ Presentación & Reactividad (Streamlit):** 

@@ -103,22 +103,18 @@ if not df_surtidos.empty:
     df_active['sort_order'] = df_active['status_code'].map(order_map)
     df_active = df_active.sort_values(['sort_order', 'fecha_promesa'])
     
-    orden_cols = ['REFERENCIA', 'PEDIMENTO', 'NO. PEDIDO', 'ORDEN', 'ID']
+    orden_cols = ['REFERENCIA WMS', 'REFERENCIA', 'PEDIMENTO', 'NO. PEDIDO', 'ORDEN', 'ID']
     cliente_cols = ['CLIENTE', 'NOMBRE CLIENTE', 'CUSTOMER']
     tipo_cols = ['TIPO DE MERCANCIA', 'TIPO', 'CATEGORIA', 'PRODUCTO']
     
     # Prepare Active JSON
-    for _, row in df_active.head(15).iterrows(): # Limit 15 to fit
-        cliente = get_col(row, cliente_cols, 'Sin Cliente')[:28]
-        orden = get_col(row, orden_cols, 'N/A')[:18]
-        tipo = get_col(row, tipo_cols, '-')[:20]
+    for _, row in df_active.head(25).iterrows(): # Slightly more items
+        cliente = get_col(row, cliente_cols, 'Sin Cliente')[:32]
+        orden = get_col(row, orden_cols, 'N/A')[:22]
+        tipo = get_col(row, tipo_cols, '-')[:25]
         
         fecha_prom = row.get('fecha_promesa')
-        # Format: DD/MM HH:MM (highlight time)
         if pd.notna(fecha_prom):
-            # If time is 23:59:59 (default), show only date? 
-            # User specifically asked for time from col S.
-            # If it has specific time (not 23:59:59), show it clearly.
             if fecha_prom.hour == 23 and fecha_prom.minute == 59 and fecha_prom.second == 59:
                 prom_str = fecha_prom.strftime('%d/%m') + " Fin día"
             else:
@@ -134,15 +130,6 @@ if not df_surtidos.empty:
         else:
             tiempo_str = "-"
         
-        if row.get('status_code') == 'ready':
-            # Ready orders are still part of the main list, just status 'ready'
-            pass 
-        
-        status_code = row.get('status_code', 'on_time')
-        # Ensure distinct color for Ready if needed, but here we just rely on status_color from Python logic
-        # user wants "Activas" in another color (Purple for total card).
-        # We can keep card colors as is (Green for Ready, Blue for On Time).
-        
         orders_json.append({
             'cliente': cliente,
             'orden': orden,
@@ -155,7 +142,8 @@ if not df_surtidos.empty:
             'status_text': row.get('status_text', 'N/A'),
             'status_color': row.get('status_color', '#64748b'),
             'status_code': row.get('status_code', 'on_time'),
-            'pendiente': int(row.get('total_pzas', 0)) - int(row.get('surtido_pzas', 0))
+            'pendiente': int(row.get('total_pzas', 0)) - int(row.get('surtido_pzas', 0)),
+            'status_original': get_col(row, ['STATUS DE SURTIDO'], 'N/A')
         })
 
     # Prepare Completed JSON
@@ -163,7 +151,9 @@ if not df_surtidos.empty:
         cliente = get_col(row, cliente_cols, 'Sin Cliente')
         orden = get_col(row, orden_cols, 'N/A')
         pzas = row.get('total_pzas', 0)
-        # Try to get a time, else use 'Hoy'
+        surtido = row.get('surtido_pzas', 0)
+        tipo = get_col(row, tipo_cols, '-')
+        
         fin = row.get('fecha_fin')
         fin_str = fin.strftime('%d/%m %H:%M') if pd.notna(fin) else 'Sin Fecha'
         
@@ -171,7 +161,12 @@ if not df_surtidos.empty:
             'cliente': cliente,
             'orden': orden,
             'pzas': int(pzas),
-            'hora': fin_str
+            'surtido': int(surtido),
+            'tipo': tipo,
+            'hora': fin_str,
+            'status_text': 'ENTREGADO',
+            'status_color': '#3fb950',
+            'status_original': get_col(row, ['STATUS DE SURTIDO'], 'N/A')
         })
     
     total_active = len(df_active)
@@ -179,6 +174,15 @@ if not df_surtidos.empty:
     risk_count = len(df_active[df_active['status_code'] == 'risk'])
     ontime_count = len(df_active[df_active['status_code'] == 'on_time'])
     ready_count = len(df_active[df_active['status_code'] == 'ready'])
+    
+    # Store counts for JS
+    stats_data = {
+        'delayed': {'count': delayed_count, 'label': 'Demorados', 'color': '#ef4444', 'desc': 'Órdenes que ya superaron su fecha promesa de entrega.'},
+        'risk': {'count': risk_count, 'label': 'Riesgo Entrega', 'color': '#f59e0b', 'desc': 'Órdenes con menos de 24h restantes y poco avance.'},
+        'on_time': {'count': ontime_count, 'label': 'A Tiempo', 'color': '#3b82f6', 'desc': 'Órdenes que se encuentran dentro del cronograma esperado.'},
+        'ready': {'count': ready_count, 'label': 'Listas', 'color': '#10b981', 'desc': 'Órdenes con surtido completo, pendientes de embarque.'},
+        'total': {'count': total_active, 'label': 'Activas', 'color': '#d2a8ff', 'desc': 'Total de órdenes que se están procesando actualmente.'}
+    }
 else:
     total_active = delayed_count = risk_count = ontime_count = ready_count = 0
 
@@ -211,7 +215,9 @@ html = f"""
         .header-date {{ font-size: 0.9rem; color: var(--muted); }}
         
         .stats {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; flex-shrink: 0; }}
-        .stat-card {{ background: var(--card); border-radius: 10px; padding: 1rem; text-align: center; border: 1px solid var(--border); border-left: 4px solid; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }}
+        .stat-card {{ background: var(--card); border-radius: 10px; padding: 1rem; text-align: center; border: 1px solid var(--border); border-left: 4px solid; box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s; }}
+        .stat-card:hover {{ transform: scale(1.03); border-color: inherit; box-shadow: 0 8px 16px rgba(0,0,0,0.4); }}
+        .stat-card.active {{ background: rgba(255,255,255,0.05); border-color: var(--blue) !important; transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }}
         .stat-value {{ font-size: 2.2rem; font-weight: 800; }}
         .stat-label {{ font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
         
@@ -225,8 +231,8 @@ html = f"""
             align-content: start;
         }}
         
-        .order-card {{ background: var(--card); border-radius: 10px; padding: 1.25rem; border: 1px solid var(--border); border-left: 4px solid var(--blue); position: relative; transition: all 0.2s; }}
-        .order-card:hover {{ transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); border-color: var(--blue); }}
+        .order-card {{ background: var(--card); border-radius: 10px; padding: 1.25rem; border: 1px solid var(--border); border-left: 4px solid var(--blue); position: relative; transition: all 0.2s; cursor: pointer; }}
+        .order-card:hover {{ transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); border-color: var(--blue); }}
         .order-card.delayed {{ border-left-color: var(--red); animation: pulse 2s infinite; }}
         .order-card.risk {{ border-left-color: var(--orange); }}
         .order-card.ready {{ border-left-color: var(--green); background: rgba(63, 185, 80, 0.05); }}
@@ -256,8 +262,9 @@ html = f"""
             border-left: 3px solid var(--green);
             opacity: 0.85;
             transition: all 0.2s;
+            cursor: pointer;
         }}
-        .comp-card:hover {{ opacity: 1; transform: translateX(-2px); border-color: var(--green); }}
+        .comp-card:hover {{ opacity: 1; transform: translateX(-4px); border-color: var(--green); box-shadow: -4px 0 12px rgba(63, 185, 80, 0.2); }}
         .comp-header {{ display: flex; justify-content: space-between; align-items: start; }}
         .comp-client {{ font-weight: 700; font-size: 0.9rem; color: #f0f6fc; }}
         .comp-time {{ font-size: 0.75rem; font-weight: 600; color: #3fb950; background: rgba(63, 185, 80, 0.1); padding: 2px 6px; border-radius: 4px; }}
@@ -286,18 +293,23 @@ html = f"""
         ::-webkit-scrollbar-thumb:hover {{ background: #8b949e; }}
         
         /* Modal & Footer same as before */
-        .modal-overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }}
+        .modal-overlay {{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; backdrop-filter: blur(4px); }}
         .modal-overlay.active {{ display: flex; align-items: center; justify-content: center; }}
-        .modal-box {{ background: var(--card); border-radius: 16px; padding: 2rem; width: 90%; max-width: 500px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); animation: zoomIn 0.2s; }}
+        .modal-box {{ background: var(--card); border-radius: 16px; padding: 2rem; width: 90%; max-width: 500px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.6); animation: zoomIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; overflow: hidden; }}
+        .modal-box::before {{ content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--blue); }}
         .modal-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }}
-        .modal-title {{ font-size: 1.25rem; font-weight: 700; color: #f0f6fc; }}
-        .close-btn {{ background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); }}
-        .modal-row {{ display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #30363d; }}
-        .modal-label {{ color: var(--muted); font-size: 0.85rem; }}
-        .modal-value {{ font-weight: 600; font-size: 0.9rem; color: #f0f6fc; }}
+        .modal-title {{ font-size: 1.4rem; font-weight: 800; color: #f0f6fc; }}
+        .close-btn {{ background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--muted); line-height: 1; transition: color 0.2s; }}
+        .close-btn:hover {{ color: var(--red); }}
+        .modal-row {{ display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid #30363d; }}
+        .modal-row:last-of-type {{ border-bottom: none; }}
+        .modal-label {{ color: var(--muted); font-size: 0.85rem; font-weight: 500; }}
+        .modal-value {{ font-weight: 700; font-size: 0.95rem; color: #f0f6fc; }}
         .modal-footer {{ margin-top: 1.5rem; text-align: right; }}
-        .btn-close {{ background: var(--blue); color: #0d1117; border: none; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; }}
-        @keyframes zoomIn {{ from {{ transform: scale(0.95); opacity: 0; }} to {{ transform: scale(1); opacity: 1; }} }}
+        .btn-close {{ background: #30363d; color: white; border: none; padding: 0.7rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s; }}
+        .btn-close:hover {{ background: #444c56; }}
+        
+        @keyframes zoomIn {{ from {{ transform: scale(0.9); opacity: 0; }} to {{ transform: scale(1); opacity: 1; }} }}
     </style>
 </head>
 <body>
@@ -313,23 +325,23 @@ html = f"""
             </div>
             
             <div class="stats">
-                <div class="stat-card" style="border-left-color: var(--red);">
+                <div class="stat-card" id="stat-delayed" style="border-left-color: var(--red);" onclick="applyFilter('delayed')">
                     <div class="stat-value" style="color: var(--red);">{delayed_count}</div>
-                    <div class="stat-label" style="color: var(--red);">⚠️ Demorados (Entrega)</div>
+                    <div class="stat-label" style="color: var(--red);">⚠️ Demorados</div>
                 </div>
-                <div class="stat-card" style="border-left-color: var(--orange);">
+                <div class="stat-card" id="stat-risk" style="border-left-color: var(--orange);" onclick="applyFilter('risk')">
                     <div class="stat-value" style="color: var(--orange);">{risk_count}</div>
-                    <div class="stat-label" style="color: var(--orange);">⏰ Riesgo Entrega</div>
+                    <div class="stat-label" style="color: var(--orange);">⏰ Riesgo</div>
                 </div>
-                <div class="stat-card" style="border-left-color: var(--blue);">
+                <div class="stat-card" id="stat-on_time" style="border-left-color: var(--blue);" onclick="applyFilter('on_time')">
                     <div class="stat-value" style="color: var(--blue);">{ontime_count}</div>
                     <div class="stat-label" style="color: var(--blue);">✓ A Tiempo</div>
                 </div>
-                <div class="stat-card" style="border-left-color: var(--green);">
+                <div class="stat-card" id="stat-ready" style="border-left-color: var(--green);" onclick="applyFilter('ready')">
                     <div class="stat-value" style="color: var(--green);">{ready_count}</div>
-                    <div class="stat-label" style="color: var(--green);">🚀 Listas (Embarque)</div>
+                    <div class="stat-label" style="color: var(--green);">🚀 Listas</div>
                 </div>
-                <div class="stat-card" style="border-left-color: var(--purple);">
+                <div class="stat-card active" id="stat-total" style="border-left-color: var(--purple);" onclick="applyFilter('total')">
                     <div class="stat-value" style="color: var(--purple);">{total_active}</div>
                     <div class="stat-label" style="color: var(--purple);">📋 Activas</div>
                 </div>
@@ -343,17 +355,17 @@ html = f"""
             <div class="side-title">✅ Salidas Recientes</div>
             <div class="completed-list" id="completedList"></div>
             <div style="margin-top: auto; padding-top: 1rem; text-align: center; font-size: 0.7rem; color: var(--muted);">
-                Actualizado: {now.strftime('%H:%M:%S')}
+                Actualizada: {now.strftime('%H:%M:%S')}
             </div>
         </div>
     </div>
     
     <!-- Modal -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
-        <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-box" id="modalBox" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <div class="modal-title" id="modalTitle">Detalle de Orden</div>
-                <button class="close-btn" onclick="closeModal()">×</button>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <div id="modalContent"></div>
             <div class="modal-footer">
@@ -365,46 +377,59 @@ html = f"""
     <script>
         const orders = {json.dumps(orders_json)};
         const completed = {json.dumps(completed_json)};
+        const stats = {json.dumps(stats_data)};
+        let currentFilter = 'total';
         
-        function getProgressColor(p) {{
-            if (p < 40) return 'var(--red)';
-            if (p < 80) return 'var(--orange)';
-            return 'var(--green)';
-        }}
-        
-        function renderAll() {{
-            // Render Active
-            document.getElementById('orderGrid').innerHTML = orders.map((o, i) => `
-                <div class="order-card ${{o.status_code}}" onclick="showModal(${{i}})">
+        function renderOrders() {{
+            const filtered = (currentFilter === 'total') ? orders : orders.filter(o => o.status_code === currentFilter);
+            const grid = document.getElementById('orderGrid');
+            
+            if (filtered.length === 0) {{
+                grid.innerHTML = `<div style="grid-column: 1/-1; padding: 3rem; text-align: center; color: var(--muted); border: 2px dashed var(--border); border-radius: 12px; font-size: 1.1rem;">Sin órdenes en esta categoría</div>`;
+                return;
+            }}
+
+            grid.innerHTML = filtered.map((o) => {{
+                // Important: we find the original index for showOrderModal
+                const originalIndex = orders.findIndex(orig => orig.orden === o.orden);
+                
+                return `
+                <div class="order-card ${{o.status_code}}" onclick="showOrderModal(${{originalIndex}}, 'active')">
                     <div class="order-header">
                         <div>
-                            <div class="order-cliente">${{o.cliente}}</div>
+                            <div class="order-cliente" title="${{o.cliente}}">${{o.cliente}}</div>
                             <div class="order-tipo">📦 ${{o.tipo}}</div>
-
                         </div>
                         <span class="order-badge" style="background:${{o.status_color}}">${{o.status_text}}</span>
                     </div>
                     <div class="order-grid-details">
                         <div>
-                            <div class="order-label">Fecha de Entrega</div>
+                            <div class="order-label">Fecha Compromiso</div>
                             <div class="order-val">${{o.fecha_promesa.split(' ')[0]}}</div>
                             ${{o.fecha_promesa !== '-' ? `<div style="font-size:0.75rem; color:#64748b; margin-top:2px; font-weight:500;">⏰ ${{o.fecha_promesa.split(' ')[1] || ''}}</div>` : ''}}
                         </div>
-                        <div style="text-align:right"><div class="order-label">Tiempo</div><div class="order-val" style="color:${{o.status_code==='delayed'?'var(--red)':'inherit'}}">${{o.tiempo}}</div></div>
+                        <div style="text-align:right"><div class="order-label">Tiempo Restante</div><div class="order-val" style="color:${{o.status_code==='delayed'?'var(--red)':'inherit'}}">${{o.tiempo}}</div></div>
                     </div>
                     <div class="progress-bar">
                         <div class="progress-fill" style="width:${{o.progress.toFixed(0)}}%; background:${{o.status_color}}"></div>
                     </div>
                     <div class="progress-txt">
-                        <span>${{o.surtido.toLocaleString()}} / ${{o.total.toLocaleString()}}</span>
+                        <span>Pzas: ${{o.surtido.toLocaleString()}} / ${{o.total.toLocaleString()}}</span>
                         <strong>${{o.progress.toFixed(0)}}%</strong>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }}).join('');
+        }}
+
+        function renderCompleted() {{
+            const sideList = document.getElementById('completedList');
+            if (completed.length === 0) {{
+                sideList.innerHTML = '<div style="color:var(--muted); text-align:center; margin-top:2rem;">Sin salidas recientes</div>';
+                return;
+            }}
             
-            // Render Completed
-            document.getElementById('completedList').innerHTML = completed.map(c => `
-                <div class="comp-card">
+            sideList.innerHTML = completed.map((c, i) => `
+                <div class="comp-card" onclick="showOrderModal(${{i}}, 'completed')">
                     <div class="comp-header">
                         <div class="comp-client">${{c.cliente}}</div>
                         <div class="comp-time">✅ ${{c.hora}}</div>
@@ -413,32 +438,65 @@ html = f"""
                     <div class="comp-pzas">📦 ${{c.pzas.toLocaleString()}} piezas</div>
                 </div>
             `).join('');
+        }}
+
+        function applyFilter(key) {{
+            currentFilter = key;
             
-            if (completed.length === 0) {{
-                document.getElementById('completedList').innerHTML = '<div style="color:var(--muted); text-align:center; margin-top:2rem;">Sin salidas recientes</div>';
-            }}
+            // Update UI Active State
+            document.querySelectorAll('.stat-card').forEach(el => el.classList.remove('active'));
+            document.getElementById('stat-' + key).classList.add('active');
+            
+            renderOrders();
         }}
         
-        function showModal(idx) {{
-            const o = orders[idx];
-            document.getElementById('modalTitle').textContent = o.cliente;
-            document.getElementById('modalContent').innerHTML = `
-                <div class="modal-row"><span class="modal-label">Orden</span><span class="modal-value">#${{o.orden}}</span></div>
-                <div class="modal-row"><span class="modal-label">Tipo</span><span class="modal-value">${{o.tipo}}</span></div>
-                <div class="modal-row"><span class="modal-label">Fecha Promesa</span><span class="modal-value">${{o.fecha_promesa}}</span></div>
-                <div class="modal-row"><span class="modal-label">Estatus</span><span class="modal-value" style="color:${{o.status_color}}">${{o.status_text}}</span></div>
-                <div class="modal-row"><span class="modal-label">Avance</span><span class="modal-value">${{o.progress.toFixed(1)}}%</span></div>
-                <div class="modal-row"><span class="modal-label">Piezas Surtidas</span><span class="modal-value">${{o.surtido.toLocaleString()}}</span></div>
-                <div class="modal-row"><span class="modal-label">Total Piezas</span><span class="modal-value">${{o.total.toLocaleString()}}</span></div>
+        function showOrderModal(idx, type) {{
+            const o = (type === 'active') ? orders[idx] : completed[idx];
+            const modalBox = document.getElementById('modalBox');
+            modalBox.style.setProperty('--blue', o.status_color || 'var(--green)');
+            
+            document.getElementById('modalTitle').textContent = type === 'active' ? 'Detalle de Orden Activa' : 'Detalle de Orden Completada';
+            
+            let content = `
+                <div style="margin-bottom: 1.5rem; text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">${{o.cliente}}</div>
+                    <div style="font-size: 0.85rem; color: var(--muted);">Orden #${{o.orden}}</div>
+                </div>
+                
+                <div class="modal-row"><span class="modal-label">Tipo de Mercancía</span><span class="modal-value">${{o.tipo}}</span></div>
+                <div class="modal-row"><span class="modal-label">${{type === 'active' ? 'Fecha Promesa' : 'Hora de Salida'}}</span><span class="modal-value">${{o.fecha_promesa || o.hora}}</span></div>
+                <div class="modal-row"><span class="modal-label">Estatus Dashboard</span><span class="modal-value" style="color:${{o.status_color}}">${{o.status_text}}</span></div>
+                <div class="modal-row"><span class="modal-label">Status de Surtido</span><span class="modal-value" style="color:var(--cyan);">${{o.status_original}}</span></div>
             `;
+
+            if (type === 'active') {{
+                content += `
+                    <div class="modal-row"><span class="modal-label">Avance Surtido</span><span class="modal-value">${{o.progress.toFixed(1)}}%</span></div>
+                    <div class="modal-row"><span class="modal-label">Piezas Surtidas</span><span class="modal-value">${{o.surtido.toLocaleString()}}</span></div>
+                    <div class="modal-row"><span class="modal-label">Total de Piezas</span><span class="modal-value">${{o.total.toLocaleString()}}</span></div>
+                    <div class="modal-row"><span class="modal-label">Pendiente</span><span class="modal-value">${{(o.total - o.surtido).toLocaleString()}} pzas</span></div>
+                `;
+            }} else {{
+                content += `
+                    <div class="modal-row"><span class="modal-label">Piezas Totales</span><span class="modal-value">${{o.pzas.toLocaleString()}}</span></div>
+                `;
+            }}
+
+            document.getElementById('modalContent').innerHTML = content;
             document.getElementById('modalOverlay').classList.add('active');
         }}
-        
+
         function closeModal() {{
             document.getElementById('modalOverlay').classList.remove('active');
         }}
         
-        renderAll();
+        // Cierra modal con tecla ESC
+        window.addEventListener('keydown', (e) => {{
+            if (e.key === 'Escape') closeModal();
+        }});
+
+        renderOrders();
+        renderCompleted();
     </script>
 </body>
 </html>

@@ -203,7 +203,7 @@ def main():
         
         try:
             user_trigger = os.getenv("TRIGGERED_BY", "REEBOK_SCRAPER_AIRPORT")
-            log_activity(user_trigger, "SCRAPER_RUN", "Iniciando scraper de Airport Mode (Activos)")
+            # log_activity(user_trigger, "SCRAPER_RUN", "Iniciando scraper de Airport Mode (Activos)")
             login(page)
             POOL_ID_SURTIDO = "e352a00c-66df-438e-b1bc-55ff8610918d"
             
@@ -267,7 +267,7 @@ def main():
 
 
             update_status("Proceso Completado", 100)
-            log_activity(user_trigger, "SCRAPER_RUN", "Sincronización de Airport Mode (Activos) Completada")
+            # log_activity(user_trigger, "SCRAPER_RUN", "Sincronización de Airport Mode (Activos) Completada")
             with open(STATUS_FILE, "w") as f:
                 json.dump({"message": "Actualización Airport Mode Completada", "percent": 100, "status": "complete"}, f)
 

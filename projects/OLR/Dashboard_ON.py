@@ -14,10 +14,10 @@ from src.database import log_activity
 import src.ai_summarizer as ai_summarizer
 import pytz
 
+st.set_page_config(page_title="OLR Mesa de Control", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
+
 # Configuración Horaria
 CDMX_TZ = pytz.timezone('America/Mexico_City')
-
-# st.set_page_config(page_title="OLR Mesa de Control", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
 
 # Persistent MENU button + hide Streamlit chrome
 # Hide Streamlit chrome but keep Header (Sidebar Toggle) visible
@@ -469,8 +469,16 @@ html_content = f"""<!DOCTYPE html>
             --blue: #58a6ff !important;
         }
         body { background: var(--bg) !important; color: var(--text) !important; }
-        .topbar { background: #010409 !important; border-bottom: 1px solid var(--border) !important; }
+        .topbar { background: #010409 !important; border-bottom: 1px solid var(--border) !important; justify-content: center !important; }
         .header-text h1 { color: #f0f6fc !important; }
+        .signature { 
+            font-size: 1.2rem !important; 
+            opacity: 1.0 !important; 
+            color: #ff3131 !important; 
+            text-shadow: 0 0 10px #ff0000 !important;
+            bottom: -5px !important;
+            right: -100px !important;
+        }
         .card, .chart-box { 
             background: var(--card) !important; 
             border: 1px solid var(--border) !important;
@@ -494,10 +502,29 @@ html_content = f"""<!DOCTYPE html>
         .modal-header { border-bottom-color: var(--border) !important; }
         .close-btn { color: var(--muted) !important; }
         .close-btn:hover { color: #f0f6fc !important; }
-        .info-box { background: rgba(88, 166, 255, 0.1) !important; border-left-color: var(--blue) !important; color: #f0f6fc !important; }
-        .exec-summary { background: #0d1117 !important; border-left-color: var(--blue) !important; color: #8b949e !important; }
-        .exec-header { color: #f0f6fc !important; }
+        
+        /* Inner Modal visibility fixes */
+        .info-box { background: rgba(88, 166, 255, 0.05) !important; border-left: 4px solid var(--blue) !important; color: #f0f6fc !important; padding: 12px !important; border-radius: 4px !important; }
+        .exec-summary { background: #0d1117 !important; border-left: 4px solid var(--blue) !important; color: #8b949e !important; padding: 12px !important; border-radius: 8px !important; margin-bottom: 12px !important; }
+        .exec-header { color: #f0f6fc !important; font-weight: 800 !important; margin-bottom: 8px !important; }
         .exec-body { color: #c9d1d9 !important; }
+        .info-list li { color: #8b949e !important; }
+        .info-title { color: #f0f6fc !important; margin-top: 15px !important; margin-bottom: 8px !important; }
+        
+        .tech-details { background: #0d1117 !important; color: #8b949e !important; border: 1px solid var(--border) !important; padding: 15px !important; border-radius: 8px !important; font-family: monospace !important; }
+        .tech-tag { background: #21262d !important; color: #58a6ff !important; border: 1px solid rgba(56, 139, 253, 0.4) !important; }
+
+        table th { border-bottom: 2px solid var(--border) !important; color: var(--muted) !important; }
+        table td { border-bottom: 1px solid var(--border) !important; color: #c9d1d9 !important; }
+        tr:hover td { background: rgba(255,255,255,0.05) !important; }
+
+        .btn-close { background: #21262d !important; color: #c9d1d9 !important; border: 1px solid var(--border) !important; padding: 8px 20px !important; border-radius: 8px !important; }
+        .btn-close:hover { background: #30363d !important; color: #f0f6fc !important; }
+        .btn-tech { background: transparent !important; color: var(--muted) !important; border: 1px solid var(--border) !important; }
+        .btn-tech:hover { border-color: var(--blue) !important; color: var(--blue) !important; }
+
+        .text-green { color: #3fb950 !important; }
+        .text-red { color: #f85149 !important; }
 
         /* NEON GRADIENTS - 2026 */
         .text-neon-green {
@@ -543,7 +570,7 @@ html_content = f"""<!DOCTYPE html>
     /* CHART.JS DARK THEME DEFAULTS */
     if (typeof Chart !== 'undefined') {
         Chart.defaults.color = '#8b949e';
-        Chart.defaults.borderColor = 'rgba(48, 54, 61, 0.5)';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
         Chart.defaults.elements.line.borderWidth = 2;
         Chart.defaults.elements.point.radius = 3;
         Chart.defaults.plugins.tooltip.backgroundColor = '#161b22';
@@ -551,10 +578,14 @@ html_content = f"""<!DOCTYPE html>
         Chart.defaults.plugins.tooltip.bodyColor = '#8b949e';
         Chart.defaults.plugins.tooltip.borderColor = '#30363d';
         Chart.defaults.plugins.tooltip.borderWidth = 1;
+        
+        // Ensure scales are also light
+        Chart.defaults.scales.x = { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#8b949e' } };
+        Chart.defaults.scales.y = { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#8b949e' } };
     }
 """ + js_content + """
 </script>
 </html>
 """
 
-components.html(html_content, height=900, scrolling=False)
+components.html(html_content, height=1000, scrolling=False)

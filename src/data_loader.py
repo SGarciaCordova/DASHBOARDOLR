@@ -110,7 +110,7 @@ def load_data(sheet_name=None, credentials_path='credentials.json'):
                     return pd.DataFrame()
                 
                 headers = rows[0]
-                unique_headers = deduplicate_headers(headers)
+                unique_headers = deduplicate_headers([h.strip() for h in headers])
                 data = rows[1:]
                 
                 return pd.DataFrame(data, columns=unique_headers)

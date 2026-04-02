@@ -133,12 +133,18 @@ def _derive_status(df):
         df['dt_promesa'] = clean_comparable_dates(df, 'FECHA A ENTREGAR')
         df['dt_promesa'] = df['dt_promesa'].apply(lambda x: x.replace(hour=23, minute=59, second=59) if pd.notna(x) else x)
 
-    # NEW LOGIC: Use 'FECHA / HORA ENTREGADO' as the source of truth for completion
-    if 'FECHA / HORA ENTREGADO' in df.columns:
-        df['dt_entregado'] = pd.to_datetime(df['FECHA / HORA ENTREGADO'], dayfirst=True, errors='coerce')
+    # --- SEARCH FOR DELIVERY TIMESTAMP (Column U) ---
+    delivery_candidates = ['FECHA / HORA ENTREGADO', 'FECHA/HORA ENTREGADO', 'FECHA ENTREGADO', 'FECHA FINAL', 'ENTREGADO']
+    col_found_entregado = None
+    for c in delivery_candidates:
+        if c in df.columns:
+            col_found_entregado = c
+            break
+
+    if col_found_entregado:
+        df['dt_entregado'] = pd.to_datetime(df[col_found_entregado], dayfirst=True, errors='coerce')
     else:
-        # Fallback to old column if new one doesn't exist yet
-        df['dt_entregado'] = clean_comparable_dates(df, 'FECHA ENTREGADO')
+        df['dt_entregado'] = pd.Series(pd.NaT, index=df.index)
         
     # 2. Calculate Progress
     df['total_pzas'] = clean_numeric(df, 'TOTAL DE PIEZAS')

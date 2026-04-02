@@ -11,6 +11,7 @@ import pytz
 import os
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+import base64
 
 # ── SUPABASE CONNECTION (Reebok) ──
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,14 @@ def _sanitize(obj):
     elif isinstance(obj, float) and (obj != obj):
         return 0.0
     return obj
+
+def get_base64_of_bin_file(bin_file):
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except Exception:
+        return ""
 
 # try:
 #     st.set_page_config(page_title="Global Overview", layout="wide", initial_sidebar_state="collapsed")
@@ -126,7 +135,7 @@ def fetch_real_rbk_data():
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_real_on_data():
     from src.kpis.surtidos import _derive_status
-    from src.kpis.helpers import clean_numeric
+    from src.kpis.helpers import clean_numeric, clean_numeric_percent
     sheet_name = "REPORTE MR 2026 RICARDO"
     df_ent, df_sur, is_mock = data_loader.load_data(sheet_name)
 
@@ -137,7 +146,7 @@ def fetch_real_on_data():
 
     # Parse date column
     if not df_sur.empty:
-        for c in ['FECHA', 'FECHA A ENTREGAR']:
+        for c in ['FECHA / HORA ENTREGADO', 'FECHA ENTREGADO', 'FECHA']:
             if c in df_sur.columns:
                 df_sur['_dt'] = pd.to_datetime(df_sur[c], dayfirst=True, errors='coerce')
                 break
@@ -151,11 +160,15 @@ def fetch_real_on_data():
             periods[key] = {"fill": 0, "vol": 0}
             continue
         mask = df_sur['_dt'] >= since
-        df_f = df_sur[mask] if mask.any() else df_sur
-        total = clean_numeric(df_f, 'TOTAL DE PIEZAS').sum()
-        picked = clean_numeric(df_f, 'PIEZAS SURTIDAS').sum()
-        fill = (picked / total * 100) if total > 0 else 0
-        vol = int(picked)
+        df_f = df_sur[mask]
+        
+        # Calculate Fill Rate using '% EN PROCESO COMPLETO'
+        fill_series = clean_numeric_percent(df_f, '% EN PROCESO COMPLETO')
+        fill = fill_series.mean() * 100 if not fill_series.empty else 0
+        
+        # Calculate Volume using 'PIEZAS SURTIDAS'
+        vol = int(clean_numeric(df_f, 'PIEZAS SURTIDAS').sum())
+        
         periods[key] = {"fill": round(float(fill), 1), "vol": vol}
 
     # Alerts (always current snapshot)
@@ -198,12 +211,15 @@ real_on = fetch_real_on_data()
 real_rbk = fetch_real_rbk_data()
 
 
+
+
+
 hub_html = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;700;900&family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 /* Scrollbars */
@@ -224,25 +240,47 @@ body {
     padding: 10px 20px 20px;
 }
 
-.header { text-align: center; margin-bottom: 30px; }
-.emblem {
-    display: inline-block; padding: 2px;
-    background: linear-gradient(180deg, #30363d 0%, #21262d 100%);
-    border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+.header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    gap: 30px; 
+    margin-bottom: 40px; 
+    width: 100%;
 }
-.emblem-inner {
-    display: flex; align-items: center; gap: 12px;
-    background: #161b22;
-    padding: 10px 40px; border-radius: 12px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 90px;
+    height: 90px;
 }
-.emblem-icon { font-size: 22px; }
-.emblem-text {
-    font-family: 'Inter', system-ui, sans-serif; font-size: 19px; font-weight: 500;
-    color: #f0f6fc; text-shadow: 0 0 10px rgba(255,255,255,0.1); letter-spacing: 5px;
-    text-transform: uppercase;
+.logo-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
-.subtitle { margin-top: 12px; font-size: 11px; font-weight: 400; letter-spacing: 5px; text-transform: uppercase; color: #8b949e; }
+.title-container {
+    display: flex;
+    flex-direction: column;
+}
+.main-title {
+    font-size: 58px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 0.9;
+    letter-spacing: -2px;
+    margin: 0;
+}
+.signature {
+    font-family: 'Great Vibes', cursive;
+    font-size: 26px; /* A bit bigger as requested */
+    color: #ff3131; /* Neon Red */
+    margin-top: -5px;
+    margin-left: 375px; /* Precisely under 'b' of 'Hub' */
+    white-space: nowrap;
+    text-shadow: 0 0 10px #ff0000, 0 0 20px rgba(255, 0, 0, 0.5); /* Stronger Neon Glow */
+}
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1300px; margin: 0 auto; }
 .card {
     position: relative; border-radius: 18px; overflow: hidden;
@@ -302,6 +340,16 @@ body {
 .alert-detail strong { color: #f87171; }
 .alert-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .alert-row:last-child { border-bottom: none; }
+.enter-btn {
+    display: block; width: 100%; padding: 14px; text-align: center;
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.3); letter-spacing: 0.5px;
+    border-top: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s;
+    text-decoration: none; position: relative; z-index: 10;
+}
+.enter-btn:hover { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.65); }
+.card.reebok .enter-btn:hover { color: #38bdf8; }
+.card.on .enter-btn:hover { color: #f43f5e; }
+.alert-row:last-child { border-bottom: none; }
 .c-blue { color: #38bdf8; } .c-green { color: #34d399; } .c-red { color: #f87171; }
 .c-pink { color: #f472b6; } .c-amber { color: #fbbf24; } .c-muted { color: rgba(255,255,255,0.25); }
 .spark-wrap { margin-top: 14px; height: 75px; }
@@ -355,11 +403,13 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
 </script>
 
 <div class="header">
-    <div class="emblem"><div class="emblem-inner">
-        <span class="emblem-icon">🌐</span>
-        <span class="emblem-text">Command Hub</span>
-    </div></div>
-    <div class="subtitle">Multi-Account Control</div>
+    <div class="logo-container">
+        <img src="data:image/png;base64,<!--LOGO_B64-->" alt="OLR Logo">
+    </div>
+    <div class="title-container">
+        <h1 class="main-title">Command Hub</h1>
+        <div class="signature">by Sergio Cordova</div>
+    </div>
 </div>
 
 <div class="grid">
@@ -384,7 +434,7 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
             </div>
             <div class="dots" id="dots-rbk"></div>
         </div>
-        <div class="enter-btn" onclick="enterDashboard('reebok')">✈  Ingresar a Dashboard Reebok</div>
+        <div class="enter-btn" onclick="enterDashboard('reebok')">✈  INGRESAR A DASHBOARD REEBOK</div>
     </div>
 
     <!-- ON -->
@@ -408,7 +458,7 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
             </div>
             <div class="dots" id="dots-on"></div>
         </div>
-        <div class="enter-btn" onclick="enterDashboard('on')">✈  Ingresar a Dashboard ON</div>
+        <div class="enter-btn" onclick="enterDashboard('on')">✈  INGRESAR A DASHBOARD ON</div>
     </div>
 </div>
 
@@ -620,12 +670,22 @@ function toggleAlertDetail(acc) {
 }
 
 function enterDashboard(acc) {
-    if (acc === 'reebok') {
-        window.parent.location.href = "Dashboard_Reebok";
-    } else if (acc === 'on') {
-        window.parent.location.href = "Dashboard_ON";
-    }
+    const label = acc === 'reebok' ? 'Dashboard Reebok' : 'Dashboard ON';
+    try {
+        const parentDoc = window.parent.document;
+        const entries = Array.from(parentDoc.querySelectorAll('button, a, [role="button"], span'));
+        const target = entries.find(el => el.textContent.trim().toLowerCase() === label.toLowerCase());
+        if (target) {
+            target.click();
+            return;
+        }
+    } catch(e) {}
+    const slug = label.replace(/\s+/g, '_');
+    window.open(window.location.origin + '/' + slug, '_top');
 }
+
+
+
 
 function showGlobalAlerts() {
     const modal = document.getElementById('global-alert-modal');
@@ -667,9 +727,11 @@ document.addEventListener("DOMContentLoaded", function() {
 </html>
 """
 
+logo_b64 = get_base64_of_bin_file("assets/logo.png")
 sync_time = datetime.now(CDMX_TZ).strftime("%H:%M")
 html_rendered = hub_html.replace('<!--DATA_ON-->', json.dumps(real_on)) \
                         .replace('<!--DATA_RBK-->', json.dumps(real_rbk)) \
+                        .replace('<!--LOGO_B64-->', logo_b64) \
                         .replace('<!--LAST_SYNC-->', f"Hoy a las {sync_time}")
 
 components.html(html_rendered, height=850, scrolling=False)

@@ -36,154 +36,167 @@ st.set_page_config(
 def inject_custom_css():
     st.markdown("""
         <style>
-        /* Import a technical/mono font from Google Fonts */
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
-        /* Global background and font */
+        /* Global Theme - Deep Dark */
         [data-testid="stAppViewContainer"], .stApp {
-            background-color: #0A0E1A !important;
-            font-family: 'Share Tech Mono', monospace !important;
-            color: #8A9BB0 !important;
+            background-color: #0d1117 !important;
+            font-family: 'Inter', sans-serif !important;
+            color: #c9d1d9 !important;
         }
 
-        /* Hide default Streamlit UI elements completely */
+        /* Mono font for technical bits */
+        .mono { font-family: 'Share Tech Mono', monospace !important; }
+
+        /* Hide Streamlit elements */
         [data-testid="stHeader"] {display: none !important;}
         #MainMenu {visibility: hidden !important;}
         footer {visibility: hidden !important;}
         .stDeployButton {display: none !important;}
         
-        /* Container styling to act as the central control box */
+        /* THE COMMAND HUB BOX (Login Form) */
         [data-testid="stForm"] {
-            border: 1px solid #00AEEF !important;
-            padding: 40px 30px !important;
-            background: linear-gradient(180deg, rgba(10,14,26,1) 0%, rgba(15,22,40,1) 100%) !important;
-            box-shadow: 0 0 20px rgba(0, 174, 239, 0.15), inset 0 0 15px rgba(0, 174, 239, 0.05) !important;
-            border-radius: 2px !important;
-            position: relative;
+            border: 2px solid #58a6ff !important;
+            padding: 50px 40px !important;
+            background-color: #161b22 !important;
+            box-shadow: 0 0 30px rgba(88, 166, 255, 0.15), inset 0 0 20px rgba(88, 166, 255, 0.05) !important;
+            border-radius: 12px !important;
+            backdrop-filter: blur(10px);
         }
 
-        /* Titles and headers */
+        /* NEON HEADING */
         h1 {
-            color: #00AEEF !important;
-            font-size: 1.6rem !important;
+            background: linear-gradient(135deg, #79c0ff, #58a6ff) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            text-shadow: 0 0 15px rgba(88, 166, 255, 0.5) !important;
+            font-size: 1.8rem !important;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0,174,239,0.5);
-            margin-bottom: 0px !important;
-            padding-bottom: 0px !important;
+            letter-spacing: 3px;
+            font-weight: 800 !important;
             text-align: center;
+            margin-bottom: 5px !important;
         }
         
         .subtitle {
-            color: #8A9BB0;
-            font-size: 0.85rem;
+            color: #d2a8ff !important;
+            text-shadow: 0 0 10px rgba(210, 168, 255, 0.4);
+            font-size: 0.8rem;
             text-align: center;
-            margin-top: 5px;
-            letter-spacing: 1px;
-            border-bottom: 1px solid #1a2436;
-            padding-bottom: 20px;
-            margin-bottom: 25px;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px;
         }
 
-        /* Status Indicator Row */
+        /* SYSTEM STATUS NEON */
         .status-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: -15px;
-            margin-bottom: 30px;
-            font-size: 0.8rem;
+            margin-top: -10px;
+            margin-bottom: 35px;
             font-family: 'Share Tech Mono', monospace;
         }
         .status-indicator {
-            color: #00ff00;
-            text-shadow: 0 0 5px rgba(0,255,0,0.6);
-            /* simple CSS blink animation */
-            animation: blinker 2s linear infinite;
+            color: #3fb950 !important;
+            text-shadow: 0 0 12px rgba(63, 185, 80, 0.6) !important;
+            font-weight: bold;
+            font-size: 0.85rem;
+            animation: pulse 1.5s infinite alternate;
         }
-        @keyframes blinker {
-            50% { opacity: 0.6; text-shadow: none; }
+        @keyframes pulse {
+            from { opacity: 0.7; text-shadow: 0 0 8px rgba(63, 185, 80, 0.4); }
+            to { opacity: 1; text-shadow: 0 0 15px rgba(63, 185, 80, 0.8); }
         }
         .timestamp {
-            color: #4a5a6b;
+            color: #8b949e;
+            font-size: 0.75rem;
         }
 
-        /* Text Input Fields */
+        /* INPUT FIELDS - NEON BLUE */
+        .stTextInput label {
+            color: #58a6ff !important;
+            text-shadow: 0 0 8px rgba(88, 166, 255, 0.5) !important;
+            font-size: 0.75rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
         .stTextInput > div > div > input {
-            background-color: #05070d !important;
-            color: #00AEEF !important;
-            border: 1px solid #1a2436 !important;
-            border-radius: 2px !important;
-            padding: 10px 15px !important;
+            background-color: #0d1117 !important;
+            color: #f0f6fc !important;
+            border: 1px solid #30363d !important;
+            border-radius: 8px !important;
+            padding: 12px 18px !important;
             font-family: 'Share Tech Mono', monospace !important;
-            transition: all 0.3s ease;
+            font-size: 1rem !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stTextInput > div > div > input:focus {
-            border-color: #00AEEF !important;
-            box-shadow: 0 0 8px rgba(0,174,239,0.3) !important;
-            outline: none !important;
-        }
-        .stTextInput label {
-            color: #8A9BB0 !important;
-            font-size: 0.8rem !important;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
+            border-color: #58a6ff !important;
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.3) !important;
+            background-color: #161b22 !important;
         }
 
-        /* Login Button */
+        /* BUTTON - NEON GLOW-IN */
         [data-testid="stFormSubmitButton"] > button {
             width: 100% !important;
-            background-color: transparent !important;
-            color: #00AEEF !important;
-            border: 1px solid #00AEEF !important;
-            border-radius: 2px !important;
-            padding: 15px 0 !important;
-            font-family: 'Share Tech Mono', monospace !important;
-            font-size: 1.1rem !important;
+            background: linear-gradient(135deg, #1f6feb, #58a6ff) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 18px 0 !important;
+            font-weight: 800 !important;
+            font-size: 1.2rem !important;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-top: 25px !important;
-            transition: all 0.2s ease-in-out !important;
-            position: relative;
-            overflow: hidden;
+            letter-spacing: 3px;
+            margin-top: 20px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(31, 111, 235, 0.3) !important;
         }
         [data-testid="stFormSubmitButton"] > button:hover {
-            background-color: #00AEEF !important;
-            color: #0A0E1A !important;
-            box-shadow: 0 0 15px #00AEEF !important;
-            border: 1px solid #00AEEF !important;
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(88, 166, 255, 0.6) !important;
+            background: linear-gradient(135deg, #388bfd, #79c0ff) !important;
         }
         
-        [data-testid="stFormSubmitButton"] > button:active {
-            transform: scale(0.98);
-        }
-
-        /* Alerts and Errors Override */
+        /* ERROR ALERT NEON RED */
         [data-testid="stAlert"] {
-            background-color: rgba(255, 0, 0, 0.05) !important;
-            border: 1px solid #ff0000 !important;
-            color: #ff0000 !important;
-            border-radius: 2px !important;
+            background-color: rgba(248, 81, 73, 0.05) !important;
+            border: 1px solid #f85149 !important;
+            box-shadow: 0 0 10px rgba(248, 81, 73, 0.2) !important;
+            border-radius: 8px !important;
         }
-        [data-testid="stAlert"] [data-testid="stMarkdownContainer"] p {
-            color: #ff0000 !important;
+        [data-testid="stAlert"] p {
+            color: #ff7baf !important;
+            text-shadow: 0 0 8px rgba(255, 123, 175, 0.5) !important;
             font-family: 'Share Tech Mono', monospace !important;
-            font-size: 0.85rem !important;
+            font-weight: 700;
         }
         
-        /* Footer Absolute Positioning */
+        /* FOOTER */
         .system-footer {
             position: fixed;
-            bottom: 20px;
+            bottom: 25px;
             left: 0;
             width: 100%;
             text-align: center;
-            color: #4a5a6b;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
+            color: #484f58;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
             font-family: 'Share Tech Mono', monospace;
             z-index: 100;
+        }
+        .session-neon {
+            color: #ffa657 !important;
+            text-shadow: 0 0 8px rgba(255, 166, 87, 0.5) !important;
+            font-size: 0.65rem;
+            font-weight: bold;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -303,16 +316,16 @@ def main():
         # Render bottom footer
         st.markdown(f'''
             <div class="system-footer">
-                v2.1.4 — Build 2024.11 | OLR Logistics Engine<br>
-                <span style="color: #00AEEF; font-size: 0.65rem;">SESSION ID: {st.session_state.session_hash} — ALL ACTIVITY IS RECORDED</span>
+                v2.1.4 — Build 2024.11 | <span class="session-neon">OLR Logistics Engine</span><br>
+                <span class="session-neon" style="font-size: 0.65rem;">SESSION ID: {st.session_state.session_hash} — ALL ACTIVITY IS RECORDED</span>
             </div>
         ''', unsafe_allow_html=True)
         
     else:
         # Dashboard view once logged in (Placeholder)
         st.write("<br><br>", unsafe_allow_html=True)
-        st.markdown("<h1 style='text-align:center;'>ACCESS GRANTED</h1>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:center; color:#00ff00; margin-top:20px;'>● UPLINK ESTABLISHED. Welcome to the Control Tower.</div>", unsafe_allow_html=True)
+        st.markdown("<h1>ACCESS GRANTED</h1>", unsafe_allow_html=True)
+        st.markdown("<div class='status-indicator' style='text-align:center; font-size: 1.1rem; margin-top:20px;'>● UPLINK ESTABLISHED. Welcome to the Control Tower.</div>", unsafe_allow_html=True)
         
         # Logout button to terminate session
         st.write("<br><br>", unsafe_allow_html=True)

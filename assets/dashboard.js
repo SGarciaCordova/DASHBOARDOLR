@@ -9,7 +9,7 @@ function initCharts() {
         new Chart(document.getElementById('compChart'), {
             type: 'doughnut',
             data: { labels: K.comp_chart.map(d => d.Estado), datasets: [{ data: K.comp_chart.map(d => d.Cantidad), backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 }, color: '#8b949e' } } } }
         });
     }
     // Volume Bar (Updated to Piezas)
@@ -41,7 +41,7 @@ function initCharts() {
                         type: 'bar',
                         label: 'Órdenes',
                         data: K.weekly_data.map(d => d.Ordenes),
-                        backgroundColor: '#e2e8f0',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         yAxisID: 'y1',
                         borderRadius: 4
                     }
@@ -68,7 +68,7 @@ function initCharts() {
         new Chart(document.getElementById('tipoChart'), {
             type: 'pie',
             data: { labels: K.vol_data.map(d => d['TIPO DE MERCANCIA']), datasets: [{ data: K.vol_data.map(d => d.Total_Piezas), backgroundColor: COLORS, borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 }, color: '#8b949e' } } } }
         });
     }
     // Status Distribution
@@ -83,7 +83,7 @@ function initCharts() {
                     borderWidth: 0
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 }, color: '#8b949e' } } } }
         });
     }
     // Client Bar
@@ -123,7 +123,7 @@ function renderModalChart(type, d) {
         config = {
             type: 'doughnut',
             data: { labels: ['A Tiempo', 'Fuera de SLA'], datasets: [{ data: [d.cumple, d.total - d.cumple], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } } } }
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, color: '#8b949e' } } } }
         };
     } else if (type === 'report_time') {
         // Fallback if accessed via URL or legacy
@@ -148,8 +148,8 @@ function renderModalChart(type, d) {
     } else if (type === 'tiempo_extra') {
         config = {
             type: 'doughnut',
-            data: { labels: ['En SLA', 'Breach (>72h)'], datasets: [{ data: [d.total - d.excedidos, d.excedidos], backgroundColor: ['#e5e7eb', '#ef4444'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } } } }
+            data: { labels: ['En SLA', 'Breach (>72h)'], datasets: [{ data: [d.total - d.excedidos, d.excedidos], backgroundColor: ['rgba(255,255,255,0.1)', '#ef4444'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, color: '#8b949e' } } } }
         };
     } else if (type === 'efic_desc') {
         config = {
@@ -166,8 +166,8 @@ function renderModalChart(type, d) {
     } else if (type === 'pct_surtido') {
         config = {
             type: 'doughnut',
-            data: { labels: ['Surtido', 'Pendiente'], datasets: [{ data: [d.surtido, d.pendiente], backgroundColor: ['#10b981', '#e5e7eb'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } } } }
+            data: { labels: ['Surtido', 'Pendiente'], datasets: [{ data: [d.surtido, d.pendiente], backgroundColor: ['#10b981', 'rgba(255,255,255,0.1)'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, color: '#8b949e' } } } }
         };
     } else if (type === 'avance_etapa') {
         config = {
@@ -211,7 +211,7 @@ function renderModalChart(type, d) {
                         type: 'bar',
                         label: 'Órdenes',
                         data: (d.by_week || []).map(x => x.Ordenes),
-                        backgroundColor: '#e5e7eb',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         yAxisID: 'y1',
                         borderRadius: 4,
                         barThickness: 20
@@ -221,21 +221,26 @@ function renderModalChart(type, d) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: 'bottom' } },
+                plugins: { legend: { display: true, position: 'bottom', labels: { color: '#8b949e' } } },
                 scales: {
                     y: {
                         type: 'linear',
                         display: true,
                         position: 'left',
-                        title: { display: true, text: 'Piezas' },
-                        grid: { display: false }
+                        title: { display: true, text: 'Piezas', color: '#8b949e' },
+                        grid: { display: false },
+                        ticks: { color: '#8b949e' }
                     },
                     y1: {
                         type: 'linear',
                         display: true,
                         position: 'right',
-                        title: { display: true, text: 'Órdenes' },
-                        grid: { drawOnChartArea: false }
+                        title: { display: true, text: 'Órdenes', color: '#8b949e' },
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#8b949e' }
+                    },
+                    x: {
+                        ticks: { color: '#8b949e' }
                     }
                 }
             }
@@ -281,7 +286,7 @@ function showModal(type) {
         'cumpl_72h': () => {
             const d = K.cumpl_72h;
             renderModalChart('cumpl_72h', d);
-            let ai_html = K.ai_insights && K.ai_insights.cumpl_72h ? `<div class="exec-summary" style="background-color:#f0f9ff;border-color:#bae6fd;padding:12px;border-radius:8px;margin-bottom:12px;text-align:left;"><div style="margin-bottom:6px;font-weight:bold;color:#1e40af;font-size:0.9rem;">🧠 AI Executive Insight</div><div style="color:#334155;font-size:0.85rem;line-height:1.4;">${K.ai_insights.cumpl_72h}</div></div>` : "";
+            let ai_html = K.ai_insights && K.ai_insights.cumpl_72h ? `<div class="exec-summary"><div class="exec-header">🧠 AI Executive Insight</div><div class="exec-body">${K.ai_insights.cumpl_72h}</div></div>` : "";
             return ['⏰ SLA Compliance (72h)',
                 `${ai_html}<div class="info-box">${d.cumple} de ${d.total} cumplen SLA = ${d.pct.toFixed(1)}%</div><div class="info-section"><div class="info-title">🎯 Meta</div><div class="info-box" style="color:${d.pct >= 95 ? '#10b981' : '#ef4444'}">Meta: 95% | Actual: ${d.pct.toFixed(1)}%</div></div>`,
                 'Conteo directo de Columna "CUMPLIMIENTO" (CUMPLE vs NO). Vacíos excluidos.', 'CUMPLIMIENTO 72 HORAS (Columna AK)'];
@@ -368,7 +373,7 @@ function showModal(type) {
             let executiveSummary = "<div class='exec-summary'><i>Sin suficientes datos históricos para un análisis de tendencia.</i></div>";
 
             if (K.ai_insights && K.ai_insights.vol_surtido) {
-                executiveSummary = `<div class="exec-summary" style="background-color:#f0f9ff;border-color:#bae6fd;padding:12px;border-radius:8px;margin-bottom:10px;text-align:left;"><div style="margin-bottom:6px;font-weight:bold;color:#1e40af;font-size:0.9rem;">🧠 AI Executive Insight</div><div style="color:#334155;font-size:0.85rem;line-height:1.4;">${K.ai_insights.vol_surtido}</div></div>`;
+                executiveSummary = `<div class="exec-summary"><div class="exec-header">🧠 AI Executive Insight</div><div class="exec-body">${K.ai_insights.vol_surtido}</div></div>`;
             } else if (d.by_week && d.by_week.length >= 2) {
                 const cur = d.by_week[d.by_week.length - 1];
                 const prev = d.by_week[d.by_week.length - 2];

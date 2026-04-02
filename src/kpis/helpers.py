@@ -10,7 +10,8 @@ def clean_comparable_dates(df, col_name):
     """Parses mixed date formats to datetime objects."""
     if col_name not in df.columns:
         return pd.Series(pd.NaT, index=df.index)
-    return pd.to_datetime(df[col_name], dayfirst=False, errors='coerce')
+    # Use dayfirst=True for LATAM consistency (DD/MM/YYYY)
+    return pd.to_datetime(df[col_name], dayfirst=True, errors='coerce')
 
 def clean_numeric_percent(df, col_name):
     """Parses '100%' style strings to 0.0-1.0 floats. Blanks remain NaN."""

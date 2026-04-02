@@ -568,7 +568,7 @@ def main():
 
     user_trigger = os.getenv("TRIGGERED_BY", f"{client_key}_SCRAPER")
     try:
-        log_activity(user_trigger, "SCRAPER_RUN", f"Iniciando scraper de Entradas - {client_key}")
+    # log_activity(user_trigger, "SCRAPER_RUN", f"Iniciando scraper de Entradas - {client_key}")
         # ── FASE 1: Login ────────────────────────────────────────────────────
         login(driver, wait, client_key)
 
@@ -592,7 +592,7 @@ def main():
                 process_entradas_csv(path, client_key)
 
             update_status("Sincronización Completa", 100)
-            log_activity(user_trigger, "SCRAPER_RUN", f"Sincronización Completa ({client_key}): {len(archivos)} archivos.")
+            # log_activity(user_trigger, "SCRAPER_RUN", f"Sincronización Completa ({client_key}): {len(archivos)} archivos.")
             log.info("✅ Todo listo.")
         else:
             log.warning("⚠️ No se descargaron archivos.")

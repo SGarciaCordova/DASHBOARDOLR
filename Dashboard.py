@@ -36,162 +36,167 @@ def get_base64_of_bin_file(bin_file):
 def inject_login_css():
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;500;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;500;600;800&family=Share+Tech+Mono&display=swap');
 
-        /* Global background and font ONLY for Login */
-        [data-testid="stAppViewContainer"], .stApp {
-            background-color: #f0f2f5 !important;
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='69.28203230275509' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 11.547L40 23.094L20 34.641L0 23.094L0 11.547L20 0L40 11.547ZM20 46.188L20 57.735L0 69.282L-20 57.735L-20 46.188L0 34.641L20 46.188ZM60 46.188L60 57.735L40 69.282L20 57.735L20 46.188L40 34.641L60 46.188Z' fill='none' stroke='%23e5e9f0' stroke-width='1'/%3E%3C/svg%3E") !important;
-            font-family: 'Inter', sans-serif !important;
-            color: #333333 !important;
+        /* Global Viewport - Locked to 100vh/100vw */
+        [data-testid="stAppViewContainer"] {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 100vh !important;
+            width: 100vw !important; /* Full width */
+            min-height: 100vh !important;
+            overflow: hidden !important;
+            background-color: #0d1117 !important;
+            background-image: radial-gradient(circle at 50% 50%, rgba(88, 166, 255, 0.05) 0%, transparent 80%) !important;
         }
 
-        /* Hide default Streamlit UI elements completely */
+        /* Streamlit Internal Container - Centering & No Padding */
+        .main .block-container {
+            max-width: 100% !important; /* Ensure it takes full width */
+            padding: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+        }
+
+        /* Hide Streamlit elements */
         [data-testid="stHeader"] {display: none !important;}
         #MainMenu {visibility: hidden !important;}
         footer {visibility: hidden !important;}
         .stDeployButton {display: none !important;}
         
-        /* Container styling */
+        /* THE COMMAND HUB BOX - Perfectly Centered & Nudged Up */
         [data-testid="stForm"] {
-            margin-top: -50px !important;
-            background-color: #ffffff !important;
-            border: 1px solid #ffffff !important;
-            padding: 40px 40px 25px 40px !important;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05), 0 3px 10px rgba(0, 0, 0, 0.03) !important;
-            border-radius: 12px !important;
-            position: relative;
+            background-color: #161b22 !important;
+            border: 2px solid #58a6ff !important;
+            padding: 40px 35px !important;
+            box-shadow: 0 0 40px rgba(88, 166, 255, 0.15), inset 0 0 25px rgba(88, 166, 255, 0.05) !important;
+            border-radius: 15px !important;
+            backdrop-filter: blur(10px);
+            max-width: 500px !important;
+            margin: auto !important;
+            box-sizing: border-box !important;
+            transform: translateY(-40px) !important; /* Move it up ~1cm */
         }
-        
+
+        /* COMPACT NEON HEADING */
         h1 {
-            color: #8b0000 !important;
-            font-size: 2.2rem !important;
+            background: linear-gradient(135deg, #79c0ff, #58a6ff) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            text-shadow: 0 0 15px rgba(88, 166, 255, 0.5) !important;
+            font-size: 2rem !important;
             font-weight: 800 !important;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0 0 2px 0 !important;
-            padding: 0 !important;
-            text-shadow: none !important;
+            letter-spacing: 3px;
+            margin: 0 !important;
+            font-family: 'Inter', sans-serif !important;
         }
-
-        .subtitle-container {
-            display: flex;
-            align-items: center;
-        }
-
+        
         .subtitle {
-            color: #6c757d;
-            font-size: 0.95rem;
-            font-weight: 500;
+            color: #d2a8ff !important;
+            text-shadow: 0 0 10px rgba(210, 168, 255, 0.3);
+            font-size: 0.9rem !important;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-family: 'Inter', sans-serif !important;
         }
 
-        .subtitle-line {
-            flex-grow: 1;
-            height: 1px;
-            background-color: #ced4da;
-            margin-left: 10px;
-        }
-
-        /* Status Indicator Row */
+        /* STATUS INDICATOR */
         .status-container {
             text-align: center;
-            margin-bottom: 25px;
-            font-size: 0.95rem;
+            margin-bottom: 25px !important;
+            margin-top: 15px !important;
+            font-family: 'Inter', sans-serif !important;
         }
         .status-indicator {
-            color: #2e8b57;
-            font-weight: 600;
+            color: #3fb950 !important;
+            text-shadow: 0 0 12px rgba(63, 185, 80, 0.6) !important;
+            font-weight: 800;
+            font-size: 0.95rem !important;
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { opacity: 0.8; }
+            to { opacity: 1; }
         }
 
-        /* Text Input Fields */
+        /* COMPACT INPUT FIELDS */
         .stTextInput > div > div > input {
-            background-color: #ffffff !important;
-            color: #333333 !important;
-            border: 1px solid #d1d5db !important;
-            border-radius: 6px !important;
-            padding: 12px 15px !important;
+            background-color: #0d1117 !important;
+            color: #f0f6fc !important;
+            border: 1px solid #30363d !important;
+            border-radius: 8px !important;
+            padding: 10px 15px !important;
             font-family: 'Inter', sans-serif !important;
-            font-weight: 500 !important;
+            font-size: 0.9rem !important;
             text-align: center !important;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
-            transition: all 0.2s ease;
-        }
-        .stTextInput > div > div > input::placeholder {
-            color: #888888 !important;
-            font-weight: 400 !important;
-            text-align: center !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .stTextInput > div > div > input:focus {
-            border-color: #15295c !important;
-            box-shadow: 0 0 0 3px rgba(21, 41, 92, 0.1) !important;
-            outline: none !important;
+            border-color: #58a6ff !important;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.2) !important;
         }
 
-        /* Hide labels */
-        .stTextInput label {
-            display: none !important;
-        }
-
-        /* Center the button container */
-        [data-testid="stForm"] {
-            text-align: center !important;
-        }
-        .stButton, [data-testid="stFormSubmitButton"] {
-            display: flex !important;
-            justify-content: center !important;
-            width: 100% !important;
-            margin-top: 10px !important;
-        }
-
-        /* Login Button */
+        /* COMPACT BUTTON */
         [data-testid="stFormSubmitButton"] > button {
-            width: 250px !important;
-            margin: 0 auto !important;
-            background-color: #15295c !important;
-            color: #ffffff !important;
+            width: 100% !important;
+            background: linear-gradient(135deg, #1f6feb, #58a6ff) !important;
+            color: white !important;
             border: none !important;
-            border-radius: 25px !important;
-            padding: 15px 30px !important;
+            border-radius: 20px !important;
+            padding: 12px 0 !important;
+            font-weight: 800 !important;
+            font-size: 1rem !important;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 15px !important;
             font-family: 'Inter', sans-serif !important;
-            font-size: 1.05rem !important;
-            font-weight: 600 !important;
-            transition: all 0.2s ease-in-out !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(31, 111, 235, 0.3) !important;
         }
         [data-testid="stFormSubmitButton"] > button:hover {
-            background-color: #0f1e40 !important;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(21, 41, 92, 0.2) !important;
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.4) !important;
+            background: linear-gradient(135deg, #388bfd, #79c0ff) !important;
         }
         
-        [data-testid="stFormSubmitButton"] > button:active {
-            transform: scale(0.98);
-        }
-
-        /* Alerts and Errors Override */
+        /* ERROR ALERT NEON RED */
         [data-testid="stAlert"] {
-            border-radius: 6px !important;
+            background-color: rgba(248, 81, 73, 0.05) !important;
+            border: 1px solid #f85149 !important;
+            box-shadow: 0 0 10px rgba(248, 81, 73, 0.2) !important;
+            border-radius: 8px !important;
+        }
+        [data-testid="stAlert"] p {
+            color: #ff7baf !important;
+            text-shadow: 0 0 8px rgba(255, 123, 175, 0.5) !important;
             font-family: 'Inter', sans-serif !important;
-            padding: 10px !important;
-            margin-bottom: 10px !important;
+            font-weight: 700;
         }
         
-        /* Footer within card */
+        /* MINIMIZED FOOTER */
         .card-footer {
             text-align: center;
-            margin-top: 40px; /* Lowered the entire footer section */
-            color: #6c757d;
-            font-size: 0.75rem;
-            line-height: 1.4;
+            margin-top: 20px;
+            color: #484f58;
+            font-size: 0.65rem;
+            font-family: 'Inter', sans-serif !important;
+            letter-spacing: 1px;
         }
         .designer-signature {
             font-family: 'Great Vibes', cursive;
             font-size: 1.2rem;
-            font-weight: 500;
-            color: #000000 !important;
-            margin-top: 10px;
-            letter-spacing: 0.5px;
+            color: #ffa657 !important;
+            text-shadow: 0 0 10px rgba(255, 166, 87, 0.4) !important;
+            margin-top: 5px;
             display: inline-block;
-            opacity: 1;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -244,72 +249,45 @@ def login():
     if 'session_hash' not in st.session_state:
         st.session_state.session_hash = hashlib.sha256(str(time.time()).encode()).hexdigest()[:16].upper()
 
-    # Remove initial spacing to move card to the top
-    st.write("", unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
+    # Absolute Centering using Single Column + Flexbox CSS
+    with st.container():
         with st.form("login_form", clear_on_submit=False):
             
             try:
                 logo_b64 = get_base64_of_bin_file("assets/logo.png")
-                img_tag = f'<img src="data:image/png;base64,{logo_b64}" width="100" style="object-fit: contain;" />'
+                img_tag = f'<img src="data:image/png;base64,{logo_b64}" width="85" style="object-fit: contain; margin-bottom: 12px;" />'
             except Exception:
-                # Fallback in case image is missing
-                img_tag = '<div style="width: 100px; height: 100px; background: #ddd; border-radius: 50%;"></div>'
+                img_tag = '<div style="width: 80px; height: 80px; background: #ddd; border-radius: 50%;"></div>'
 
             st.markdown(f"""
-                <div style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 20px;">
-                    <div style="margin-right: 15px; display: flex; align-items: center;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: center;">
                         {img_tag}
                     </div>
-                    <div style="flex-grow: 1;">
-                        <h1 style="text-align: left; margin-bottom: 0;">COMMAND CENTER</h1>
-                        <div class="subtitle-container" style="justify-content: flex-start; margin-bottom: 0;">
-                            <span class="subtitle">3PL Control Tower</span>
-                            <div class="subtitle-line"></div>
-                        </div>
-                    </div>
+                    <h1 style="margin-top: 10px;">COMMAND CENTER</h1>
+                    <div class="subtitle">3PL CONTROL TOWER</div>
                 </div>
                 
                 <div class="status-container">
                     <span class="status-indicator">● System Operational</span>
                     <br>
-                    <span style="font-size: 0.7rem; color: #6c757d;">
-                        Database: {"☁️ Cloud (Supabase)" if "supabase" in engine.url.host else "🏠 Local (SQLite)"}
+                    <span style="font-size: 0.65rem; color: #8b949e; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px;">
+                        DATABASE: {"SUPABASE" if "supabase" in engine.url.host else "LOCAL"}
                     </span>
                 </div>
             """, unsafe_allow_html=True)
 
-            email = st.text_input("Email", label_visibility="collapsed", placeholder="ID de Operador / Email")
-            password = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Código de Autorización")
+            email = st.text_input("Email", label_visibility="collapsed", placeholder="ID DE OPERADOR / EMAIL")
+            password = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="CÓDIGO DE AUTORIZACIÓN")
             
             alert_placeholder = st.empty()
             boot_placeholder = st.empty()
-            
-            # Custom Centered Button
-            st.markdown("""
-                <div style="display: flex; justify-content: center; margin-top: 15px;">
-                    <style>
-                        .stButton > button {
-                            width: 280px !important;
-                            background-color: #15295c !important;
-                            color: white !important;
-                            border-radius: 25px !important;
-                            padding: 12px 30px !important;
-                            border: none !important;
-                            font-weight: 600 !important;
-                        }
-                    </style>
-                </div>
-            """, unsafe_allow_html=True)
             
             submit = st.form_submit_button("Acceder al Sistema", use_container_width=True)
             
             st.markdown(f'''
                 <div class="card-footer">
-                    v2.0 — Build 2026.01 | OLR Logistics | By SGC<br>
+                    v2.1 — Build 2024.11 | OLR Logistics | By SGC<br>
                     <div class="designer-signature">Designed by Sergio Cordova</div>
                 </div>
             ''', unsafe_allow_html=True)

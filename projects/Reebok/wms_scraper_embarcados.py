@@ -243,7 +243,7 @@ def main():
 
         try:
             user_trigger = os.getenv("TRIGGERED_BY", "REEBOK_SCRAPER")
-            log_activity(user_trigger, "SCRAPER_RUN", "Iniciando scraper de Embarcados Reebok")
+            # log_activity(user_trigger, "SCRAPER_RUN", "Iniciando scraper de Embarcados Reebok")
             clear_downloads("OUTBOUND-")
             login(page)
 
@@ -365,7 +365,7 @@ def main():
                 logging.error("Failed to acquire Embarcados file.")
 
             update_status("Fase 2 completada", 100)
-            log_activity(user_trigger, "SCRAPER_RUN", "Sincronización Completa de Embarcados Reebok")
+            # log_activity(user_trigger, "SCRAPER_RUN", "Sincronización Completa de Embarcados Reebok")
             logging.info("Phase 2 finished.")
 
         except Exception as e:

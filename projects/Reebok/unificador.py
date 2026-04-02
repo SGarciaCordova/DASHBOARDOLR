@@ -64,7 +64,7 @@ def unify_data():
             # 3. Log de Actividad Final
             from src.database import log_activity
             user_trigger = os.getenv("TRIGGERED_BY", "SISTEMA_UNIFICADOR_REEBOK")
-            log_activity(user_trigger, "SYNC", "Unificación y Limpieza de Datos Completada (Reebok)")
+            log_activity(user_trigger, "SYNC", "Sincronización de Datos Completa")
             
             conn.commit()
             

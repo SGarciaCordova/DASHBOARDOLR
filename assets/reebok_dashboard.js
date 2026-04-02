@@ -45,12 +45,12 @@ const chartOpts = {
 const commonScales = {
     y: {
         beginAtZero: true,
-        grid: { borderDash: [4, 4], color: '#e2e8f0', drawBorder: false },
-        ticks: { color: '#1e293b', font: { family: 'Inter', size: 10, weight: 'bold' }, maxTicksLimit: 5 }
+        grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.1)', drawBorder: false },
+        ticks: { color: '#8b949e', font: { family: 'Inter', size: 10, weight: 'bold' }, maxTicksLimit: 5 }
     },
     x: {
         grid: { display: false, drawBorder: false },
-        ticks: { color: '#1e293b', font: { family: 'Inter', size: 10, weight: 'bold' }, maxRotation: 0 }
+        ticks: { color: '#8b949e', font: { family: 'Inter', size: 10, weight: 'bold' }, maxRotation: 0 }
     }
 };
 
@@ -145,7 +145,7 @@ function initCharts() {
                         type: 'bar',
                         label: 'Recibos (Docs)',
                         data: CHART_ENTRADAS.map(d => d.total),
-                        backgroundColor: '#e2e8f0',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         borderRadius: barRadius,
                         maxBarThickness: 30,
                         opacity: 0.5, order: 2
@@ -174,7 +174,7 @@ function initCharts() {
                 cutout: donutCutout,
                 plugins: { 
                     ...chartOpts.plugins, 
-                    legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 8 }, padding: 8 } } 
+                    legend: { display: true, position: 'bottom', labels: { boxWidth: 8, font: { size: 8 }, padding: 8, color: '#8b949e' } } 
                 }
             }
         });
@@ -199,7 +199,7 @@ function initCharts() {
                 cutout: donutCutout, 
                 plugins: { 
                     ...chartOpts.plugins, 
-                    legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, padding: 20 } } 
+                    legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, padding: 20, color: '#c9d1d9' } } 
                 } 
             }
         });
@@ -238,7 +238,7 @@ function initCharts() {
                         type: 'bar',
                         label: 'Pedidos',
                         data: CHART_SURTIDO.map(d => d.total),
-                        backgroundColor: '#f1f5f9',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         borderRadius: barRadius,
                         maxBarThickness: 30, order: 2
                     }
@@ -283,7 +283,7 @@ function initCharts() {
                 cutout: donutCutout, 
                 plugins: { 
                     ...chartOpts.plugins, 
-                    legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, padding: 15 } } 
+                    legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, padding: 15, color: '#8b949e' } } 
                 } 
             }
         });
@@ -462,7 +462,7 @@ const MODAL_CONFIG = {
                 type: 'doughnut',
                 data: {
                     labels: ['Surtido', 'Faltante'],
-                    datasets: [{ data: [K.fill_rate, 100 - K.fill_rate], backgroundColor: ['#3b82f6', '#f1f5f9'], borderWidth: 0, hoverOffset: 8 }]
+                    datasets: [{ data: [K.fill_rate, 100 - K.fill_rate], backgroundColor: ['#3b82f6', 'rgba(255,255,255,0.1)'], borderWidth: 0, hoverOffset: 8 }]
                 },
                 options: doughnutOpts
             });
@@ -507,7 +507,7 @@ const MODAL_CONFIG = {
                 type: 'doughnut',
                 data: {
                     labels: ['Completados', 'En Proceso'],
-                    datasets: [{ data: [K.pct_completados, 100 - K.pct_completados], backgroundColor: ['#14b8a6', '#f1f5f9'], borderWidth: 0, hoverOffset: 8 }]
+                    datasets: [{ data: [K.pct_completados, 100 - K.pct_completados], backgroundColor: ['#14b8a6', 'rgba(255,255,255,0.1)'], borderWidth: 0, hoverOffset: 8 }]
                 },
                 options: doughnutOpts
             });

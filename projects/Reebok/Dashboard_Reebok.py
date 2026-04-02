@@ -948,6 +948,22 @@ html_content = """<!DOCTYPE html>
         .modal-close { color: var(--muted) !important; }
         .modal-close:hover { color: #f0f6fc !important; }
         .alert-item { background: #0d1117 !important; border-color: var(--border) !important; }
+        
+        /* Inner Modal visibility fixes */
+        .visual-metric-card { background: #21262d !important; border-color: var(--blue) !important; color: #f0f6fc !important; }
+        .visual-metric-card.red-theme { border-left-color: #ef4444 !important; color: #ff7baf !important; }
+        .visual-metric-label { color: #8b949e !important; }
+        .ai-insight-box.blue-theme { background: rgba(56, 139, 253, 0.1) !important; border-color: rgba(56, 139, 253, 0.2) !important; color: #c9d1d9 !important; }
+        .ai-insight-title { color: #58a6ff !important; }
+        
+        table th { border-bottom-color: var(--border) !important; color: var(--muted) !important; }
+        table td { border-bottom-color: var(--border) !important; color: #c9d1d9 !important; }
+        tr:hover td { background: rgba(255,255,255,0.05) !important; }
+
+        .modal-btn { background: #21262d !important; color: #c9d1d9 !important; border: 1px solid var(--border) !important; }
+        .modal-btn:hover { background: #30363d !important; color: #f0f6fc !important; }
+        .modal-download-btn { background: #21262d !important; color: var(--blue) !important; border-color: var(--border) !important; }
+        .modal-download-btn:hover { background: var(--blue) !important; color: white !important; }
 
         /* NEON GRADIENTS - 2026 */
         .text-neon-blue { background: linear-gradient(135deg, #79c0ff, #58a6ff) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; text-shadow: 0 0 20px rgba(88, 166, 255, 0.3) !important; }
@@ -965,12 +981,16 @@ html_content = """<!DOCTYPE html>
     /* CHART.JS DARK THEME DEFAULTS */
     if (typeof Chart !== 'undefined') {
         Chart.defaults.color = '#8b949e';
-        Chart.defaults.borderColor = 'rgba(48, 54, 61, 0.5)';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
         Chart.defaults.plugins.tooltip.backgroundColor = '#161b22';
         Chart.defaults.plugins.tooltip.titleColor = '#f0f6fc';
         Chart.defaults.plugins.tooltip.bodyColor = '#8b949e';
         Chart.defaults.plugins.tooltip.borderColor = '#30363d';
         Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+        // Ensure scales are also light
+        Chart.defaults.scales.x = { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#8b949e' } };
+        Chart.defaults.scales.y = { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#8b949e' } };
     }
 """ + js_content + """
 </script>
