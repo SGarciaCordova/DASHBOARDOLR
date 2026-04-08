@@ -1,4 +1,9 @@
 import streamlit as st
+
+# Persistir navegación en URL para que F5 regrese aquí
+_active_page = "projects/Reebok/Airport_Mode_Reebok.py"
+st.session_state["_active_page"] = _active_page
+st.query_params["page"] = _active_page
 import streamlit.components.v1 as components
 import sqlite3
 import pandas as pd
@@ -242,13 +247,17 @@ def show_airport_mode():
         except: pass
             
         scraper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wms_aeropuerto_scraper.py")
-        
+        shipped_scraper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wms_scraper_embarcados.py")
+        unify_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "unificador.py")
+
         # Pass user email to scraper via env var
         env = os.environ.copy()
         user_info = st.session_state.get("user", {})
         env["TRIGGERED_BY"] = user_info.get("email", "Unknown") if isinstance(user_info, dict) else getattr(user_info, "email", "Unknown")
         
         with st.status("🏗️ Sincronizando con el servidor...", expanded=True) as status:
+            # PHASE 1: ACTIVE ORDERS
+            st.write("🛰️ Fase 1: Sincronizando Órdenes Activas...")
             process = subprocess.Popen([sys.executable, scraper_path], shell=False, env=env)
             
             pbar = st.progress(0)
@@ -266,29 +275,69 @@ def show_airport_mode():
                             percent = d.get('percent', 0)
                             
                             if msg != last_msg or percent != last_pct:
-                                stext.info(f"📍 {percent}% — {msg}")
+                                stext.info(f"📍 Fase 1: {percent}% — {msg}")
                                 last_msg = msg
                                 last_pct = percent
                             
                             pbar.progress(percent)
                             
                             if d.get("status") == "error":
-                                status.update(label="❌ Error en la sincronización", state="error")
+                                status.update(label="❌ Error en Fase 1", state="error")
                                 break
                 except: pass
-                time.sleep(0.5) # Polling más rápido
+                time.sleep(0.5)
             
             process.wait()
+            
             if process.returncode == 0:
-                status.update(label="✅ Sincronización Exitosa", state="complete", expanded=False)
-                st.success("Datos actualizados.")
-                load_airport_active_data.clear()
-                load_airport_shipped_data.clear()
-                time.sleep(1)
-                st.rerun()
+                # PHASE 2: SHIPPED ORDERS (Salidas Recientes)
+                st.write("🚛 Fase 2: Sincronizando Salidas Recientes...")
+                process2 = subprocess.Popen([sys.executable, shipped_scraper_path], shell=False, env=env)
+                
+                last_msg = ""
+                last_pct = -1
+                while True:
+                    if process2.poll() is not None: break
+                    try:
+                        if os.path.exists(status_file):
+                            with open(status_file, "r") as f:
+                                d = json.load(f)
+                                msg = d.get('message', '')
+                                percent = d.get('percent', 0)
+                                
+                                if msg != last_msg or percent != last_pct:
+                                    stext.info(f"📍 Fase 2: {percent}% — {msg}")
+                                    last_msg = msg
+                                    last_pct = percent
+                                
+                                pbar.progress(percent)
+                                
+                                if d.get("status") == "error":
+                                    status.update(label="❌ Error en Fase 2", state="error")
+                                    break
+                    except: pass
+                    time.sleep(0.5)
+                
+                process2.wait()
+                
+                if process2.returncode == 0:
+                    # PHASE 3: UNIFY (Deduplication)
+                    st.write("🧹 Fase 3: Optimizando base de datos...")
+                    subprocess.run([sys.executable, unify_path], shell=False, env=env)
+                    
+                    status.update(label="✅ Sincronización Exitosa", state="complete", expanded=False)
+                    st.success("Todos los datos actualizados (Activos + Salidas).")
+                    
+                    load_airport_active_data.clear()
+                    load_airport_shipped_data.clear()
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    status.update(label="❌ Sincronización Fallida en Fase 2", state="error")
+                    st.error("Error al descargar Salidas Recientes.")
             else:
-                status.update(label="❌ Sincronización Fallida", state="error")
-                st.error("Hubo un error al descargar los datos.")
+                status.update(label="❌ Sincronización Fallida en Fase 1", state="error")
+                st.error("Hubo un error al descargar Órdenes Activas.")
 
     # Load Data
     # db_mtime removed as we use Supabase now, cache ttl ensures refresh
@@ -402,6 +451,30 @@ def show_airport_mode():
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
             {css}
+            @media (max-width: 768px) {{
+                .container-fluid {{
+                    grid-template-columns: 1fr;
+                    height: auto;
+                    padding: 1rem;
+                    gap: 1rem;
+                }}
+                .side-col {{
+                    height: auto;
+                    max-height: 400px;
+                }}
+                .stats {{
+                    grid-template-columns: repeat(3, 1fr);
+                }}
+                .order-grid {{
+                    grid-template-columns: 1fr;
+                }}
+                .header-clock {{
+                    font-size: 1.8rem;
+                }}
+                .header-title {{
+                    font-size: 1.2rem;
+                }}
+            }}
         </style>
     </head>
     <body>

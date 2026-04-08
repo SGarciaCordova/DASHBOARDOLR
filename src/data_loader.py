@@ -32,6 +32,7 @@ def deduplicate_headers(headers):
     counts = {}
     new_headers = []
     for h in headers:
+        h = str(h).strip()  # Clean spaces from Excel headers!
         if h in counts:
             counts[h] += 1
             new_headers.append(f"{h}.{counts[h]}")

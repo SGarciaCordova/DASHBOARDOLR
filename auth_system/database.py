@@ -9,7 +9,7 @@ load_dotenv()
 
 # Obtener URL de la base de datos desde .env
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./auth_system/auth.db")
-print(f"📡 Sistema conectado a: {DATABASE_URL[:40]}...")
+print(f"[DB] Sistema conectado a: {DATABASE_URL[:40]}...")
 
 # Configurar argumentos de conexión
 # check_same_thread es necesario solo para SQLite en aplicaciones multi-hilo como Streamlit

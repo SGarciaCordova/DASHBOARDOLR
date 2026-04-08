@@ -139,7 +139,6 @@ def generate_alerts(df_entradas, df_surtidos, current_kpis, previous_kpis):
              df['delivered'] = False
              
         # Check delay
-        # Filter where prom < now AND not delivered
         delayed = df[
             (df['dt_prom'] < now) & 
             (~df['delivered']) &
@@ -154,28 +153,20 @@ def generate_alerts(df_entradas, df_surtidos, current_kpis, previous_kpis):
             'message': f"{delayed_count} Órdenes Demoradas (Vencidas)"
         })
 
-    return {
-        'alerts': alerts,
-        'total_count': len(alerts)
-    }
-    
-    # KPI change alerts
-    for change in kpi_changes:
-        icon = '📈' if change['type'] == 'improvement' else '📉'
-        verb = 'mejoró' if change['type'] == 'improvement' else 'cayó'
+    # KPI change alerts - Added detail vs simple info
+    for ch in kpi_changes:
+        icon = '📈' if ch['type'] == 'improvement' else '📉'
+        verb = 'mejoró' if ch['type'] == 'improvement' else 'cayó'
         alerts.append({
-            'type': 'info' if change['type'] == 'improvement' else 'warning',
+            'type': 'info' if ch['type'] == 'improvement' else 'warning',
             'icon': icon,
-            'message': f"{change['kpi']} {verb} {abs(change['change_pct']):.1f}% vs semana anterior"
+            'message': f"{ch['kpi']} {verb} {abs(ch['change_pct']):.1f}% vs periodo anterior"
         })
-    
-    # Notification summary count
-    total_alerts = len(alerts)
-    
+
     return {
         'alerts': alerts,
         'sla_risk': sla_risk,
         'kpi_changes': kpi_changes,
-        'total_count': total_alerts,
+        'total_count': len(alerts),
         'has_critical': any(a['type'] == 'critical' for a in alerts)
     }

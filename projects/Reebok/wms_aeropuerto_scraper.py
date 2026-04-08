@@ -212,7 +212,7 @@ def main():
             
             # Asegurar que el pool esté abierto
             page.evaluate(f"getPool({{screen:'{POOL_ID_SURTIDO}'}});")
-            random_sleep(2, 4)
+            time.sleep(1)
             
             # A) ESPERAR LIMPIEZA DE OVERLAY (GatorWMS a veces muestra #processing al cambiar de pantalla)
             try:
@@ -232,16 +232,14 @@ def main():
                 logging.warning(f"Manual click failed ({e}), trying JavaScript fallback search...")
                 page.evaluate(f"searchMe({{cancelBubble:true, stopPropagation:function(){{}}}}, '{POOL_ID_SURTIDO}');")
             
-            # C) CRÍTICO: Esperar a que la tabla tenga datos reales antes de bajar el CSV
-            update_status("Esperando a que el WMS cargue los datos...", 50)
+            # El WMS suele mostrar datos al instante tras el click, usamos un timeout mínimo de seguridad
             try:
-                # GatorWMS usa tbody tr para las filas de datos reales
-                page.wait_for_selector(f"div#{POOL_ID_SURTIDO} table tbody tr", timeout=30000)
-                logging.info("Rows detected in the table. WMS search successful.")
-            except Exception as e:
-                logging.warning(f"Rows not detected after 30s ({e}), proceeding anyway as safety measure.")
+                page.wait_for_selector(f"div#{POOL_ID_SURTIDO} table tbody tr", timeout=2000)
+                logging.info("Rows detected in the table.")
+            except:
+                pass
 
-            random_sleep(2, 5) # Pequeña pausa de estabilidad
+            # Eliminamos pausa extra, ya validamos que hay datos arriba
             
             # === DESCARGAR CSV ===
             update_status("Descargando reporte de Surtido Activo...", 70)

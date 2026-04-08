@@ -258,7 +258,7 @@ def main():
 
             # 1. Asegurar que el pool esté abierto
             page.evaluate(f"getPool({{screen:'{POOL_ID_SURTIDO}'}});")
-            random_sleep(3, 5)
+            time.sleep(1)
 
             nav_success = False
             for attempt in range(2):
@@ -267,7 +267,7 @@ def main():
                     
                     # Clic manual en el dropdown
                     page.locator(f"#btnAction{POOL_ID_SURTIDO}").click(force=True)
-                    random_sleep(1, 2)
+                    time.sleep(0.5)
                     
                     # Estrategia 1: Clic manual si el link es visible
                     embarque_link = page.locator(f'a.dropdown-item[id^="embarque"]').first
@@ -288,7 +288,7 @@ def main():
                             }}, "{POOL_ID_SURTIDO}");
                         """)
                     
-                    random_sleep(5, 8)
+                    time.sleep(2)
                     btn_text = page.locator(f"#btnAction{POOL_ID_SURTIDO}").inner_text()
                     if any(x in btn_text for x in ["Embarcados", "Shipped", "Enviado", "Embarque"]):
                         logging.info("Navigation to Embarcados confirmed.")
@@ -297,7 +297,7 @@ def main():
                         
                 except Exception as e:
                     logging.error(f"Navigation attempt {attempt+1} error: {e}")
-                    random_sleep(2, 4)
+                    time.sleep(1)
 
             # Clic en la Lupa (Search) para asegurar que carguen los datos
             search_btn_xpath = f"xpath=//button[contains(@onclick, 'searchMe') and contains(@onclick, '{POOL_ID_SURTIDO}')]"
@@ -307,55 +307,35 @@ def main():
                 if search_btn.is_visible():
                     search_btn.click(force=True)
                     logging.info("Search button clicked (Lupa).")
-                    random_sleep(5, 7)
+                    time.sleep(1)
             except:
                 pass
 
-            # ── Paso 3: Esperar a que la tabla de Embarcados cargue ──
-            update_status("Esperando datos de Embarcados...", 50)
+            # El WMS suele mostrar datos al instante tras el click, usamos un timeout mínimo de seguridad
             try:
-                page.wait_for_selector(f"div#{POOL_ID_SURTIDO} table tbody tr", timeout=30000)
+                page.wait_for_selector(f"div#{POOL_ID_SURTIDO} table tbody tr", timeout=2000)
                 logging.info("Embarcados table rows detected.")
             except:
-                logging.warning("Table rows not detected, but will try download anyway.")
+                pass
 
-            # ── Paso 4: Descargar CSV de Embarcados ──
+            # ── Paso 4: Descargar CSV de Embarcados (Directo por JS para máxima velocidad) ──
             update_status("Descargando CSV de Embarcados...", 70)
             embarcados_path = None
             download_done = False
             
-            for dl_attempt in range(2):
-                try:
-                    logging.info(f"Download attempt {dl_attempt+1}...")
-                    
-                    # Selectores combinados para el botón CSV
-                    target_btn = page.locator(f"a.nav-link[onclick*='obtenMiCSV'][onclick*='{POOL_ID_SURTIDO}']").first
-                    
-                    if target_btn.is_visible():
-                        with page.expect_download(timeout=90000) as download_info:
-                            target_btn.click(force=True)
-                        download = download_info.value
-                        embarcados_path = os.path.join(DOWNLOAD_DIR, f"OUTBOUND-embarcados-{int(time.time())}.csv")
-                        download.save_as(embarcados_path)
-                        logging.info(f"CSV saved via click: {embarcados_path}")
-                        download_done = True
-                        break
-                    else:
-                        logging.info("CSV button not found or invisible, trying JS download...")
-                        with page.expect_download(timeout=60000) as download_info:
-                            page.evaluate(f"""
-                                accioname({{"icono": "fa fa-file-excel-o ", "accion": "obtenMiCSV", "nombre": "CSV"}}, "{POOL_ID_SURTIDO}");
-                            """)
-                        download = download_info.value
-                        embarcados_path = os.path.join(DOWNLOAD_DIR, f"OUTBOUND-JS-{int(time.time())}.csv")
-                        download.save_as(embarcados_path)
-                        logging.info(f"CSV saved via JS: {embarcados_path}")
-                        download_done = True
-                        break
-                        
-                except Exception as e:
-                    logging.error(f"Download attempt {dl_attempt+1} failed: {e}")
-                    random_sleep(3, 5)
+            try:
+                logging.info("Initiating direct JS CSV download...")
+                with page.expect_download(timeout=60000) as download_info:
+                    page.evaluate(f"""
+                        accioname({{"icono": "fa fa-file-excel-o ", "accion": "obtenMiCSV", "nombre": "CSV"}}, "{POOL_ID_SURTIDO}");
+                    """)
+                download = download_info.value
+                embarcados_path = os.path.join(DOWNLOAD_DIR, f"OUTBOUND-embarcados-{int(time.time())}.csv")
+                download.save_as(embarcados_path)
+                logging.info(f"CSV saved via JS: {embarcados_path}")
+                download_done = True
+            except Exception as e:
+                logging.error(f"Download failed: {e}")
 
             # ── Paso 5: Procesar y guardar en BD ──
             update_status("Procesando datos...", 90)

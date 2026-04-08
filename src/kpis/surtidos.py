@@ -133,16 +133,21 @@ def _derive_status(df):
         df['dt_promesa'] = clean_comparable_dates(df, 'FECHA A ENTREGAR')
         df['dt_promesa'] = df['dt_promesa'].apply(lambda x: x.replace(hour=23, minute=59, second=59) if pd.notna(x) else x)
 
-    # --- SEARCH FOR DELIVERY TIMESTAMP (Column U) ---
-    delivery_candidates = ['FECHA / HORA ENTREGADO', 'FECHA/HORA ENTREGADO', 'FECHA ENTREGADO', 'FECHA FINAL', 'ENTREGADO']
-    col_found_entregado = None
-    for c in delivery_candidates:
-        if c in df.columns:
-            col_found_entregado = c
-            break
-
-    if col_found_entregado:
-        df['dt_entregado'] = pd.to_datetime(df[col_found_entregado], dayfirst=True, errors='coerce')
+    # NEW LOGIC: Use 'FECHA / HORA ENTREGADO' or 'FECHA ENTREGADO' flexibly
+    col_ent = 'FECHA / HORA ENTREGADO' if 'FECHA / HORA ENTREGADO' in df.columns else 'FECHA ENTREGADO'
+    
+    if col_ent in df.columns:
+        # Clean special characters/spaces in the date string
+        clean_ent_series = df[col_ent].astype(str).str.replace(r'\s+', ' ', regex=True).str.strip()
+        df['dt_entregado'] = pd.to_datetime(clean_ent_series, dayfirst=False, errors='coerce')
+        
+        # If no time is included (midnight), default to 12:00:00 (Noon) per user request
+        def set_default_noon(dt):
+            if pd.isna(dt): return dt
+            if dt.hour == 0 and dt.minute == 0 and dt.second == 0:
+                return dt.replace(hour=12, minute=0, second=0)
+            return dt
+        df['dt_entregado'] = df['dt_entregado'].apply(set_default_noon)
     else:
         df['dt_entregado'] = pd.Series(pd.NaT, index=df.index)
         
@@ -162,7 +167,16 @@ def _derive_status(df):
         if pd.notna(row.get('dt_entregado')):
             return 'ENTREGADO'
             
-        # B. If progress >= 99%, it is READY
+        # B. (NUEVO) Verificamos la Columna Z "STATUS DE SURTIDO" antes de considerarlo solo 'Listo'
+        # Esto soluciona que se queden atoradas como listas cuando ya se embarcaron
+        col_status = next((c for c in row.index if 'STATUS DE SURTIDO' in str(c).upper() or 'ESTATUS DE SURTIDO' in str(c).upper()), None)
+        if col_status and pd.notna(row.get(col_status)):
+            # Normalize complex spaces and newlines
+            val = ' '.join(str(row.get(col_status)).split()).upper()
+            if any(term in val for term in ['ENTREGADO', 'EMBARCADO', 'TIEMPO', 'FINALIZADO', 'CONCLUIDO']):
+                return 'ENTREGADO'
+                
+        # C. If progress >= 99%, it is READY (Listas)
         if row['progress'] >= 99:
             return 'LISTO PARA EMBARQUE'
             
@@ -277,7 +291,7 @@ def get_weekly_throughput(df_surtidos):
     
     # Use correct delivery column (same as _derive_status)
     if 'FECHA / HORA ENTREGADO' in df.columns:
-        df['dt_ent'] = pd.to_datetime(df['FECHA / HORA ENTREGADO'], dayfirst=True, errors='coerce')
+        df['dt_ent'] = pd.to_datetime(df['FECHA / HORA ENTREGADO'], dayfirst=False, errors='coerce')
     else:
         df['dt_ent'] = clean_comparable_dates(df, 'FECHA ENTREGADO')
     

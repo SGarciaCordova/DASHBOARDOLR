@@ -23,7 +23,7 @@ def authenticate_user(db: Session, email: str, password: str):
     Handles failed attempts and account locking.
     Returns the User object if successful, None otherwise.
     """
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email.ilike(email)).first()
     
     if not user:
         return None

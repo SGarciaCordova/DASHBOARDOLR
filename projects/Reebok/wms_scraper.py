@@ -163,7 +163,7 @@ def login(driver: webdriver.Chrome, wait: WebDriverWait, client_name: str = "Ree
     driver.find_element(
         By.XPATH, "//button[contains(text(),'Iniciar Sesión')]"
     ).click()
-    rand_sleep(2, 4)
+    time.sleep(1)
 
     # Buscar label del cliente
     # Mapeo de nombres cortos a labels reales del select
@@ -197,7 +197,7 @@ def login(driver: webdriver.Chrome, wait: WebDriverWait, client_name: str = "Ree
                 log.warning(f"No se encontró el cliente {client_name} en la lista.")
 
         driver.find_element(By.ID, "chooseServerButton").click()
-        rand_sleep(2, 4)
+        time.sleep(1)
         log.info(f"Cliente {client_name} seleccionado.")
     except TimeoutException:
         log.info("Sin selector de cliente (ya estaba seleccionado o no aplica).")
@@ -230,7 +230,7 @@ def abrir_menu(driver: webdriver.Chrome, wait: WebDriverWait):
                        "//*[@id='menu-toggle']")
         ))
         driver.execute_script("arguments[0].click();", btn)
-        rand_sleep(1.5, 2.5)
+        time.sleep(0.5)
         log.info("Sidebar abierto con click JS.")
     except Exception as e:
         log.warning(f"No se pudo abrir menú: {e}")
@@ -245,7 +245,7 @@ def click_entradas(driver: webdriver.Chrome, wait: WebDriverWait):
         ))
         driver.execute_script("arguments[0].scrollIntoView(true);", entradas_link)
         driver.execute_script("arguments[0].click();", entradas_link)
-        rand_sleep(2, 3)
+        time.sleep(1)
         log.info("Sección Entradas clicada.")
     except Exception as e:
         log.error(f"Error al clickear Entradas: {e}")
@@ -262,7 +262,7 @@ def click_reporte_detallado(driver: webdriver.Chrome, wait: WebDriverWait):
         driver.execute_script("arguments[0].scrollIntoView(true);", reporte)
         rand_sleep(1, 2)
         driver.execute_script("arguments[0].click();", reporte)
-        rand_sleep(4, 6)
+        time.sleep(1.5)
         log.info("Modal de reporte abierto.")
     except Exception as e:
         log.error(f"Error al abrir reporte detallado: {e}")
@@ -282,7 +282,7 @@ def switch_to_reporte_frame(driver: webdriver.Chrome, wait: WebDriverWait):
     log.info("Buscando iframe del reporte (con reintentos)...")
     for intento in range(3):
         try:
-            rand_sleep(2, 3)
+            time.sleep(1)
             iframes = driver.find_elements(By.TAG_NAME, "iframe")
             log.info(f"Intento {intento+1}: Iframes encontrados: {len(iframes)}")
 
@@ -344,9 +344,8 @@ def ejecutar_busqueda(driver: webdriver.Chrome, wait: WebDriverWait):
         
         btn_semana = wait.until(EC.presence_of_element_located((By.XPATH, xpath_semana)))
         driver.execute_script("arguments[0].click();", btn_semana)
-        log.info(f"✅ Filtro de fecha configurado en 'Semana' (Selector: {xpath_semana}).")
-        log.info("Búsqueda disparada automáticamente por el WMS.")
-        rand_sleep(3, 5)
+        log.info(f"✅ Filtro de fecha configurado en 'Semana'.")
+        time.sleep(1.5)
         
     except Exception as e:
         log.warning(f"No se pudo ajustar el filtro de fecha: {e}. Seguimos con el default.")
@@ -367,8 +366,7 @@ def ejecutar_busqueda(driver: webdriver.Chrome, wait: WebDriverWait):
     except Exception:
         log.warning("No se detectó cambio claro en el DOM, procedemos a intentar descarga.")
 
-    rand_sleep(2, 4)
-
+    time.sleep(1)
 
 def descargar_csv(driver: webdriver.Chrome, wait: WebDriverWait) -> list:
     """
@@ -387,7 +385,7 @@ def descargar_csv(driver: webdriver.Chrome, wait: WebDriverWait) -> list:
     except TimeoutException:
         log.warning("Timeout esperando overlay — intentando de todas formas.")
 
-    rand_sleep(1, 2)
+    time.sleep(0.5)
 
     # 2) Snapshot de archivos antes de la descarga
     antes = set(os.listdir(DOWNLOAD_DIR))
@@ -432,7 +430,7 @@ def descargar_csv(driver: webdriver.Chrome, wait: WebDriverWait) -> list:
         else:
             estable = 0
 
-        time.sleep(3)
+        time.sleep(1)
 
     archivos = [
         os.path.join(DOWNLOAD_DIR, f)

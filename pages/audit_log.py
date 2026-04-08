@@ -1,4 +1,9 @@
 import streamlit as st
+
+# Persistir navegación en URL para que F5 regrese aquí
+_active_page = "pages/audit_log.py"
+st.session_state["_active_page"] = _active_page
+st.query_params["page"] = _active_page
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from src.database import get_supabase_engine

@@ -1,4 +1,7 @@
 import streamlit as st
+
+# Persistir navegación en URL con ALIAS elegante
+st.query_params["page"] = "usuarios"
 import pandas as pd
 from auth_system.database import engine, get_db
 from sqlalchemy import text

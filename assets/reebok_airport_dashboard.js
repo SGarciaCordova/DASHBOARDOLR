@@ -117,7 +117,7 @@ function renderAll(category = 'active') {
     // Render Completed / Shipped (only on initial load or if we want it to persist)
     // We only update the list if it's the first render or we want it constant
     const compList = document.getElementById('completedList');
-    if (compList && !compList.innerHTML) {
+    if (compList) {
         const shipped = K.shipped || [];
         if (shipped.length === 0) {
             compList.innerHTML = '<div style="color:#64748b; text-align:center; margin-top:2rem;">Sin salidas recientes</div>';

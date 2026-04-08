@@ -7,11 +7,12 @@ import numpy as np
 from datetime import datetime
 
 def clean_comparable_dates(df, col_name):
-    """Parses mixed date formats to datetime objects."""
+    """Parses mixed date formats (DD/MM/YYYY) to datetime objects, removing extra spaces."""
     if col_name not in df.columns:
         return pd.Series(pd.NaT, index=df.index)
-    # Use dayfirst=True for LATAM consistency (DD/MM/YYYY)
-    return pd.to_datetime(df[col_name], dayfirst=True, errors='coerce')
+    # STRIP extra spaces that might confuse the parser (e.g. 31 / 03)
+    clean_series = df[col_name].astype(str).str.replace(r'\s+', '', regex=True)
+    return pd.to_datetime(clean_series, dayfirst=False, errors='coerce')
 
 def clean_numeric_percent(df, col_name):
     """Parses '100%' style strings to 0.0-1.0 floats. Blanks remain NaN."""

@@ -1,4 +1,9 @@
 import streamlit as st
+
+# Persistir navegación en URL para que F5 regrese aquí
+_active_page = "projects/Reebok/Dashboard_Reebok.py"
+st.session_state["_active_page"] = _active_page
+st.query_params["page"] = _active_page
 import streamlit.components.v1 as components
 import sqlite3
 import json

@@ -1,4 +1,93 @@
 import streamlit as st
+
+# ==========================================
+# RESPONSIVE DESIGN & MOBILE DETECTION (2025-2026)
+# ==========================================
+def setup_responsive():
+    """
+    Implements a two-layer mobile responsiveness system:
+    LAYER 1 — CSS Media Queries: Injects global styling to scale fonts, cards, and layouts.
+    LAYER 2 — JS Detection: Detects device width and sets st.session_state.is_mobile.
+    """
+    # LAYER 1: CSS Media Queries
+    # We inject this at the top level to handle the main Streamlit container.
+    # Note: These styles are also injected into the iframe below for full responsiveness.
+    responsive_css = """
+        @media (max-width: 768px) {
+            /* Reduce font sizes for titles, headers and metrics */
+            .main h1, .header-text h1, h1 { font-size: 1.8rem !important; }
+            .card-value { font-size: 1.6rem !important; }
+            .card-label { font-size: 0.8rem !important; }
+            .section-title { font-size: 1.25rem !important; padding-top: 1rem !important; }
+            
+            /* Reduce padding and margins on the main content block */
+            .main .block-container { padding: 1rem 0.5rem !important; }
+            .container { padding: 0.75rem !important; }
+            
+            /* Adjust the KPI cards to use full available width */
+            .grid-6, .grid-4 { 
+                display: grid !important; 
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .card, .chart-box { 
+                width: 100% !important; 
+                margin-bottom: 0px !important;
+                min-height: auto !important;
+            }
+            
+            /* Hide purely decorative or secondary elements */
+            .signature { display: none !important; }
+            
+            /* Logo scaling and Header adjustment */
+            .header-logo { height: 60px !important; width: auto !important; }
+            .logo-section { gap: 1rem !important; flex-wrap: wrap !important; justify-content: center !important; }
+            .header-text { text-align: center !important; }
+            .topbar { padding: 1rem !important; }
+            
+            /* Modal and Interactivity scaling */
+            .modal-box { width: 95% !important; max-height: 90vh !important; }
+            .modal-title { font-size: 1.2rem !important; }
+        }
+    """
+    st.markdown(f"<style>{responsive_css}</style>", unsafe_allow_html=True)
+    st.session_state.responsive_css = responsive_css
+
+    # LAYER 2: JavaScript Detection → session_state
+    if "is_mobile" not in st.session_state:
+        # Check query params to prevent rerun loop
+        if "is_mobile" in st.query_params:
+            st.session_state.is_mobile = st.query_params["is_mobile"].lower() == "true"
+        else:
+            # Default value while detecting
+            st.session_state.is_mobile = False
+            # JS communicates back quietly via query parameters
+            st.html("""
+                <script>
+                    (function() {
+                        const isMobile = window.innerWidth < 768;
+                        const url = new URL(window.location.href);
+                        if (url.searchParams.get('is_mobile') !== String(isMobile)) {
+                            url.searchParams.set('is_mobile', isMobile);
+                            // Set quietly in parent to update session_state on next sync
+                            const parentUrl = new URL(window.parent.location.href);
+                            parentUrl.searchParams.set('is_mobile', isMobile);
+                            window.parent.location.search = parentUrl.searchParams.toString();
+                        }
+                    })();
+                </script>
+            """, unsafe_allow_javascript=True)
+
+# Initialize responsiveness
+setup_responsive()
+
+# Persistir navegación en URL con ALIAS elegante
+st.query_params["page"] = "on"
+
+# MANDATORY SECURITY CHECK: Prevent unauthorized access to this module
+if not st.session_state.get("user"):
+    st.error("ACCESO DENEGADO. Por favor inicie sesión desde el HUB principal.")
+    st.stop()
 import streamlit.components.v1 as components
 import json
 import numpy as np
@@ -14,10 +103,10 @@ from src.database import log_activity
 import src.ai_summarizer as ai_summarizer
 import pytz
 
-st.set_page_config(page_title="OLR Mesa de Control", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
-
 # Configuración Horaria
 CDMX_TZ = pytz.timezone('America/Mexico_City')
+
+# st.set_page_config(page_title="OLR Mesa de Control", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
 
 # Persistent MENU button + hide Streamlit chrome
 # Hide Streamlit chrome but keep Header (Sidebar Toggle) visible
@@ -28,7 +117,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Function to get base64 of logo
+@st.cache_data
 def get_base64_logo():
+    # Intentar primero la versión de alta calidad
+    logo_path = "assets/OLR-logistics-1024x870.png"
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    # Fallback a transparente
+    logo_path = "assets/logo_transparent.png"
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    # Fallback a estándar
     logo_path = "assets/logo.png"
     if os.path.exists(logo_path):
         with open(logo_path, "rb") as f:
@@ -38,8 +139,120 @@ def get_base64_logo():
 logo_b64 = get_base64_logo()
 
 # Load data from Google Sheets
+@st.cache_data(ttl=120)  # Cache 2 minutos
+def load_cached_data(sheet_name):
+    return data_loader.load_data(sheet_name)
+
 sheet_name = "REPORTE MR 2026 RICARDO"
-df_entradas_raw, df_surtidos_raw, is_mock = data_loader.load_data(sheet_name)
+df_entradas_raw, df_surtidos_raw, is_mock = load_cached_data(sheet_name)
+
+# ====== COMPUTE ALL KPIs (CACHED) ======
+@st.cache_data(ttl=120)
+def compute_all_kpis(df_entradas_raw, df_surtidos_raw, start_date, end_date, filter_mode):
+    # 1. Apply Date Filter Logic
+    if start_date and end_date:
+        df_entradas = kpi_engine.filter_by_custom_dates(df_entradas_raw, 'FECHA DE LLEGADA', start_date, end_date)
+        df_surtidos = kpi_engine.filter_by_custom_dates(df_surtidos_raw, 'FECHA A ENTREGAR', start_date, end_date)
+    else:
+        df_entradas = df_entradas_raw
+        df_surtidos = df_surtidos_raw
+
+    # 2. Determine comparison baseline
+    if start_date and end_date and filter_mode == "Mes Específico":
+        comp_period = 'month'
+        comp_ref = start_date
+        wow_label = "vs Mes Ant."
+    else:
+        comp_period = 'week'
+        comp_ref = date.today()
+        wow_label = "vs Sem. Ant."
+
+    df_entradas_prev = kpi_engine.get_previous_period_data(df_entradas_raw, 'FECHA DE LLEGADA', period=comp_period, ref_date=comp_ref)
+    df_surtidos_prev = kpi_engine.get_previous_period_data(df_surtidos_raw, 'FECHA A ENTREGAR', period=comp_period, ref_date=comp_ref)
+
+    # 3. Calculate metrics
+    entradas_validas = len(df_entradas[df_entradas['PEDIMENTO'].notna() & (df_entradas['PEDIMENTO'] != '')]) if 'PEDIMENTO' in df_entradas.columns else len(df_entradas)
+    
+    surtidos_df_temp = df_surtidos.copy()
+    surtidos_df_temp['total_temp'] = kpi_engine.clean_numeric(surtidos_df_temp, 'TOTAL DE PIEZAS')
+    surtidos_validos = len(surtidos_df_temp[surtidos_df_temp['total_temp'] > 0])
+
+    cumpl_72h = kpi_engine.get_cumplimiento_72h(df_entradas)
+    tiempo_ing = kpi_engine.get_tiempo_ingreso(df_entradas)
+    vol_recib = kpi_engine.get_volumen_received(df_entradas) if hasattr(kpi_engine, 'get_volumen_received') else kpi_engine.get_volumen_recibido(df_entradas)
+    carga_op = kpi_engine.get_carga_operativa(df_entradas)
+    tiempo_extra = kpi_engine.get_tiempo_extra_indicador(df_entradas)
+    efic_desc = kpi_engine.get_eficiencia_descarga(df_entradas)
+
+    cumpl_entrega = kpi_engine.get_cumplimiento_entrega(df_surtidos)
+    pct_surtido = kpi_engine.get_pct_surtido(df_surtidos)
+    audit_quality = kpi_engine.get_audit_quality(df_surtidos)
+    vol_surtido = kpi_engine.get_volumen_surtido(df_surtidos)
+    avance_etapa = kpi_engine.get_avance_etapa(df_surtidos)
+    backlog = kpi_engine.get_backlog(df_surtidos)
+    desemp_cliente = kpi_engine.get_desempeno_cliente(df_surtidos)
+    wip_metrics = kpi_engine.get_wip_metrics(df_surtidos)
+
+    cumpl_72h_prev = kpi_engine.get_cumplimiento_72h(df_entradas_prev)
+    cumpl_entrega_prev = kpi_engine.get_cumplimiento_entrega(df_surtidos_prev)
+    audit_quality_prev = kpi_engine.get_audit_quality(df_surtidos_prev)
+
+    wow_sla = kpi_engine.calculate_wow_change(cumpl_72h['pct'], cumpl_72h_prev['pct'])
+    wow_otif = kpi_engine.calculate_wow_change(cumpl_entrega['pct'], cumpl_entrega_prev['pct'])
+    wow_fulfillment = kpi_engine.calculate_wow_change(audit_quality['pct'], audit_quality_prev['pct'])
+
+    risk_prediction = ml_predictor.predict_sla_risk(df_entradas)
+
+    trend_df = kpi_engine.get_lead_time_by_week(df_entradas)
+    weekly_df = kpi_engine.get_weekly_throughput(df_surtidos)
+    comp_chart = kpi_engine.get_compliance_detail(df_entradas)
+    vol_df = kpi_engine.get_volume_by_type(df_entradas)
+    status_df = kpi_engine.get_status_distribution(df_surtidos)
+    client_df = kpi_engine.get_orders_by_client(df_surtidos)
+    pipeline_df = kpi_engine.get_pipeline_funnel(df_surtidos)
+
+    all_kpis = {
+        'cumpl_72h': cumpl_72h,
+        'tiempo_ing': tiempo_ing,
+        'vol_recib': vol_recib,
+        'carga_op': carga_op.to_dict('records') if not carga_op.empty else [],
+        'tiempo_extra': tiempo_extra,
+        'efic_desc': efic_desc,
+        'pct_surtido': pct_surtido,
+        'avance_etapa': avance_etapa,
+        'cumpl_entrega': cumpl_entrega,
+        'audit_quality': audit_quality,
+        'backlog': backlog,
+        'wip_metrics': wip_metrics,
+        'vol_surtido': vol_surtido,
+        'desemp_cliente': desemp_cliente.head(10).to_dict('records') if not desemp_cliente.empty else [],
+        'trend_data': trend_df.to_dict('records') if not trend_df.empty else [],
+        'weekly_data': weekly_df.to_dict('records') if not weekly_df.empty else [],
+        'comp_chart': comp_chart.to_dict('records') if not comp_chart.empty else [],
+        'vol_data': vol_df.to_dict('records') if not vol_df.empty else [],
+        'status_data': status_df.to_dict('records') if not status_df.empty else [],
+        'client_data': client_df.head(5).to_dict('records') if not client_df.empty else [],
+        'pipeline_data': pipeline_df.to_dict('records') if not pipeline_df.empty else [],
+        'entradas_count': entradas_validas,
+        'surtidos_count': surtidos_validos,
+        'wow': {'sla': wow_sla, 'otif': wow_otif, 'fulfillment': wow_fulfillment},
+        'risk_prediction': risk_prediction,
+        'wow_label': wow_label,
+        'ai_insights': {
+            'vol_surtido': ai_summarizer.get_ai_insight('vol_surtido', vol_surtido),
+            'cumpl_72h': ai_summarizer.get_ai_insight('cumpl_72h', cumpl_72h)
+        }
+    }
+
+    current_kpis = {'cumpl_72h': cumpl_72h, 'cumpl_entrega': cumpl_entrega, 'audit_quality': audit_quality}
+    previous_kpis = {'cumpl_72h': cumpl_72h_prev, 'cumpl_entrega': cumpl_entrega_prev, 'audit_quality': audit_quality_prev}
+    alerts_data = alert_engine.generate_alerts(df_entradas, df_surtidos, current_kpis, previous_kpis)
+    all_kpis['alerts'] = alerts_data
+
+    return (all_kpis, alerts_data, cumpl_72h, tiempo_ing, vol_recib, tiempo_extra, efic_desc, 
+            cumpl_entrega, pct_surtido, audit_quality, vol_surtido, avance_etapa, wip_metrics, backlog, 
+            risk_prediction, wow_sla, wow_otif, wow_fulfillment, wow_label, entradas_validas, surtidos_validos,
+            df_entradas, df_surtidos)
 
 # ====== DATE FILTER (Sidebar) ======
 from datetime import datetime, date, timedelta
@@ -97,147 +310,36 @@ with st.sidebar:
                     start_date, end_date = date_range
                     st.info(f"Mostrando: {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}")
 
-    # Apply Date Filter Logic
-    if start_date and end_date:
-        df_entradas = kpi_engine.filter_by_custom_dates(df_entradas_raw, 'FECHA DE LLEGADA', start_date, end_date)
-        df_surtidos = kpi_engine.filter_by_custom_dates(df_surtidos_raw, 'FECHA A ENTREGAR', start_date, end_date)
-    else:
-        # General View
-        df_entradas = df_entradas_raw
-        df_surtidos = df_surtidos_raw
+    # El filtrado ahora ocurre dentro de compute_all_kpis para poder cachear el resultado
+
+# Ejecutar la función de cómputo ANTES de los botones que dependen de df_entradas
+(all_kpis, alerts_data, cumpl_72h, tiempo_ing, vol_recib, tiempo_extra, efic_desc, 
+ cumpl_entrega, pct_surtido, audit_quality, vol_surtido, avance_etapa, wip_metrics, backlog, 
+ risk_prediction, wow_sla, wow_otif, wow_fulfillment, wow_label, entradas_validas, surtidos_validos,
+ df_entradas, df_surtidos) = compute_all_kpis(
+     df_entradas_raw, df_surtidos_raw, start_date, end_date, filter_mode
+ )
 
 # ====== EXPORT DATA (Sidebar) ======
 with st.sidebar:
     st.markdown("---")
     st.markdown("### 📥 Exportar Datos")
     
-    # Generate Excel in memory
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df_entradas.to_excel(writer, sheet_name='ENTRADAS', index=False)
-        df_surtidos.to_excel(writer, sheet_name='SURTIDOS', index=False)
-    
+    def generate_excel(df_entradas, df_surtidos):
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df_entradas.to_excel(writer, sheet_name='ENTRADAS', index=False)
+            df_surtidos.to_excel(writer, sheet_name='SURTIDOS', index=False)
+        return buffer.getvalue()
+
     st.download_button(
         label="⬇️ Descargar Excel",
-        data=buffer,
+        data=generate_excel(df_entradas, df_surtidos), # Se genera solo al hacer click
         file_name=f"Data_Dashboard_{datetime.now(CDMX_TZ).date()}.xlsx",
         mime="application/vnd.ms-excel",
         on_click=lambda: log_activity(st.session_state.user['email'], "EXPORT", "Exportación de reporte OLR (Excel)")
     )
 
-# ====== PREVIOUS PERIOD KPIs (for WoW Change) ======
-# Determine comparison baseline based on filter
-# If Month Filter -> Compare vs Previous Month
-# If General/Week -> Compare vs Previous Week (Standard WoW)
-if start_date and end_date and filter_mode == "Mes Específico":
-    comp_period = 'month'
-    comp_ref = start_date
-    wow_label = "vs Mes Ant."
-else:
-    comp_period = 'week'
-    comp_ref = date.today()
-    wow_label = "vs Sem. Ant."
-
-df_entradas_prev = kpi_engine.get_previous_period_data(df_entradas_raw, 'FECHA DE LLEGADA', period=comp_period, ref_date=comp_ref)
-df_surtidos_prev = kpi_engine.get_previous_period_data(df_surtidos_raw, 'FECHA A ENTREGAR', period=comp_period, ref_date=comp_ref)
-
-# ====== CALCULATE VALID COUNTS (filter blanks) ======
-# Entradas: count rows with valid PEDIMENTO
-entradas_validas = len(df_entradas[df_entradas['PEDIMENTO'].notna() & (df_entradas['PEDIMENTO'] != '')]) if 'PEDIMENTO' in df_entradas.columns else len(df_entradas)
-
-# Surtidos: count rows with TOTAL DE PIEZAS > 0
-surtidos_df_temp = df_surtidos.copy()
-surtidos_df_temp['total_temp'] = kpi_engine.clean_numeric(surtidos_df_temp, 'TOTAL DE PIEZAS')
-surtidos_validos = len(surtidos_df_temp[surtidos_df_temp['total_temp'] > 0])
-
-# ====== INBOUND KPIs ======
-cumpl_72h = kpi_engine.get_cumplimiento_72h(df_entradas)
-tiempo_ing = kpi_engine.get_tiempo_ingreso(df_entradas)
-vol_recib = kpi_engine.get_volumen_recibido(df_entradas)
-carga_op = kpi_engine.get_carga_operativa(df_entradas) # moved to bonus/secondary
-tiempo_extra = kpi_engine.get_tiempo_extra_indicador(df_entradas) # Kept as quality/sl breach
-efic_desc = kpi_engine.get_eficiencia_descarga(df_entradas)
-
-# ====== OUTBOUND KPIs ======
-cumpl_entrega = kpi_engine.get_cumplimiento_entrega(df_surtidos) # OTIF
-pct_surtido = kpi_engine.get_pct_surtido(df_surtidos) # Fill Rate
-audit_quality = kpi_engine.get_audit_quality(df_surtidos) # New
-vol_surtido = kpi_engine.get_volumen_surtido(df_surtidos)
-avance_etapa = kpi_engine.get_avance_etapa(df_surtidos) # Pipeline/Process Completeness
-backlog = kpi_engine.get_backlog(df_surtidos)
-desemp_cliente = kpi_engine.get_desempeno_cliente(df_surtidos)
-
-# ====== PREVIOUS PERIOD KPIs (for WoW Change) ======
-cumpl_72h_prev = kpi_engine.get_cumplimiento_72h(df_entradas_prev)
-cumpl_entrega_prev = kpi_engine.get_cumplimiento_entrega(df_surtidos_prev)
-audit_quality_prev = kpi_engine.get_audit_quality(df_surtidos_prev)
-
-# Calculate WoW changes
-wow_sla = kpi_engine.calculate_wow_change(cumpl_72h['pct'], cumpl_72h_prev['pct'])
-wow_otif = kpi_engine.calculate_wow_change(cumpl_entrega['pct'], cumpl_entrega_prev['pct'])
-wow_fulfillment = kpi_engine.calculate_wow_change(audit_quality['pct'], audit_quality_prev['pct'])
-
-# ====== ML RISK PREDICTION ======
-risk_prediction = ml_predictor.predict_sla_risk(df_entradas)
-
-# ====== CHART DATA ======
-trend_df = kpi_engine.get_lead_time_by_week(df_entradas)
-weekly_df = kpi_engine.get_weekly_throughput(df_surtidos)
-comp_chart = kpi_engine.get_compliance_detail(df_entradas)
-vol_df = kpi_engine.get_volume_by_type(df_entradas)
-status_df = kpi_engine.get_status_distribution(df_surtidos)
-client_df = kpi_engine.get_orders_by_client(df_surtidos)
-pipeline_df = kpi_engine.get_pipeline_funnel(df_surtidos)
-wip_metrics = kpi_engine.get_wip_metrics(df_surtidos)
-
-# Prepare all data for JavaScript
-all_kpis = {
-    'cumpl_72h': cumpl_72h,
-    'cumpl_72h': cumpl_72h,
-    'tiempo_ing': tiempo_ing,
-    'vol_recib': vol_recib,
-    'carga_op': carga_op.to_dict('records') if not carga_op.empty else [],
-    'tiempo_extra': tiempo_extra,
-    'efic_desc': efic_desc,
-    'pct_surtido': pct_surtido,
-    'avance_etapa': avance_etapa,
-    'cumpl_entrega': cumpl_entrega,
-    'audit_quality': audit_quality,
-    'backlog': backlog,
-    'wip_metrics': wip_metrics,
-    'vol_surtido': vol_surtido,
-    'desemp_cliente': desemp_cliente.head(10).to_dict('records') if not desemp_cliente.empty else [],
-    'trend_data': trend_df.to_dict('records') if not trend_df.empty else [],
-    'weekly_data': weekly_df.to_dict('records') if not weekly_df.empty else [],
-    'comp_chart': comp_chart.to_dict('records') if not comp_chart.empty else [],
-    'vol_data': vol_df.to_dict('records') if not vol_df.empty else [],
-    'status_data': status_df.to_dict('records') if not status_df.empty else [],
-    'client_data': client_df.head(5).to_dict('records') if not client_df.empty else [],
-    'pipeline_data': pipeline_df.to_dict('records') if not pipeline_df.empty else [],
-    'entradas_count': entradas_validas,
-    'surtidos_count': surtidos_validos,
-    'is_connected': not is_mock,
-    # WoW Changes
-    'wow': {
-        'sla': wow_sla,
-        'otif': wow_otif,
-        'fulfillment': wow_fulfillment
-    },
-    # ML Risk Prediction
-    'risk_prediction': risk_prediction,
-    'ai_insights': {
-        'vol_surtido': ai_summarizer.get_ai_insight('vol_surtido', vol_surtido),
-        'cumpl_72h': ai_summarizer.get_ai_insight('cumpl_72h', cumpl_72h)
-    }
-}
-
-# ====== GENERATE ALERTS ======
-current_kpis = {'cumpl_72h': cumpl_72h, 'cumpl_entrega': cumpl_entrega, 'audit_quality': audit_quality}
-previous_kpis = {'cumpl_72h': cumpl_72h_prev, 'cumpl_entrega': cumpl_entrega_prev, 'audit_quality': audit_quality_prev}
-alerts_data = alert_engine.generate_alerts(df_entradas, df_surtidos, current_kpis, previous_kpis)
-# Debug alerts (remove later)
-# print(f"DEBUG: alerts_data keys: {list(alerts_data.keys())}") 
-all_kpis['alerts'] = alerts_data
 
 def sanitize(obj):
     if isinstance(obj, dict):
@@ -264,16 +366,20 @@ def render_pill(value, label):
     icon = "▲" if value > 0 else "▼"
     return f'<span class="wow-change {cls}" title="{label}">{icon} {abs(value):.1f}%</span>'
 
-# Load External Assets
-try:
-    with open('assets/style.css', 'r', encoding='utf-8') as f:
-        css_content = f.read()
-    with open('assets/dashboard.js', 'r', encoding='utf-8') as f:
-        js_content = f.read()
-except Exception as e:
-    st.error(f"Error loading assets: {e}")
-    css_content = ""
-    js_content = ""
+# Load External Assets (CACHED)
+@st.cache_data
+def load_assets():
+    try:
+        with open('assets/style.css', 'r', encoding='utf-8') as f:
+            css = f.read()
+        with open('assets/dashboard.js', 'r', encoding='utf-8') as f:
+            js = f.read()
+        return css, js
+    except Exception as e:
+        st.error(f"Error loading assets: {e}")
+        return "", ""
+
+css_content, js_content = load_assets()
 
 # Inject Data into JS
 # We replace the placeholders with actual JSON data
@@ -284,6 +390,23 @@ js_content = js_content.replace('/*STATUS_COLORS_PLACEHOLDER*/ {}', json.dumps({
     'EN PROCESO': '#3b82f6',
     'PENDIENTE': '#9ca3af'
 }))
+
+# Conditionally render status bar for Cliente_ON
+status_bar_html = ""
+current_user = st.session_state.get('user', {}).get('email', '').lower()
+if current_user != 'cliente_on':
+    status_bar_html = f"""
+    <div class="status-bar {'connected' if not is_mock else 'demo'}">
+        <span>{'✓ <strong>CONECTADO</strong> a Google Sheets' if not is_mock else '⚠️ <strong>MODO DEMO</strong>'} | 
+        Entradas: {entradas_validas} | Surtidos: {surtidos_validos}</span>
+        
+        <!-- Red Notification Badge Trigger -->
+        <div class="notification-trigger" onclick="showModal('notifications')">
+            🔔 Notificaciones
+            {f'<span class="badge">{alerts_data.get("total_count", 0)}</span>' if alerts_data.get("total_count", 0) > 0 else ''}
+        </div>
+    </div>
+    """
 
 # Construct HTML Body (Dynamic)
 html_body = f"""
@@ -299,16 +422,7 @@ html_body = f"""
 </div>
 
 <div class="main-scroll-area">
-    <div class="status-bar {'connected' if not is_mock else 'demo'}">
-        <span>{'✓ <strong>CONECTADO</strong> a Google Sheets' if not is_mock else '⚠️ <strong>MODO DEMO</strong>'} | 
-        Entradas: {entradas_validas} | Surtidos: {surtidos_validos}</span>
-        
-        <!-- Red Notification Badge Trigger -->
-        <div class="notification-trigger" onclick="showModal('notifications')">
-            🔔 Notificaciones
-            {f'<span class="badge">{alerts_data.get("total_count", 0)}</span>' if alerts_data.get("total_count", 0) > 0 else ''}
-        </div>
-    </div>
+    {status_bar_html}
     
     <div class="container">
         <div class="section-title">Inbound (Entradas)</div>
@@ -453,6 +567,7 @@ html_content = f"""<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="120">
     <title>3PL Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -469,15 +584,43 @@ html_content = f"""<!DOCTYPE html>
             --blue: #58a6ff !important;
         }
         body { background: var(--bg) !important; color: var(--text) !important; }
-        .topbar { background: #010409 !important; border-bottom: 1px solid var(--border) !important; justify-content: center !important; }
-        .header-text h1 { color: #f0f6fc !important; }
-        .signature { 
-            font-size: 1.2rem !important; 
-            opacity: 1.0 !important; 
-            color: #ff3131 !important; 
-            text-shadow: 0 0 10px #ff0000 !important;
-            bottom: -5px !important;
-            right: -100px !important;
+        .topbar { 
+            background: #000000 !important; 
+            border-bottom: 1px solid var(--border) !important;
+            justify-content: center !important;
+            padding: 1rem 1.5rem !important;
+        }
+        .logo-section {
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 2rem !important;
+            text-align: left !important;
+        }
+        .header-logo {
+            height: 110px !important;
+            width: auto !important;
+            mix-blend-mode: screen !important; /* Makes black background transparent */
+            filter: brightness(1.2) contrast(1.1) !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: block !important;
+        }
+        .header-text {
+            position: relative !important;
+        }
+        .header-text h1 { 
+            color: #f0f6fc !important; 
+            font-size: 3.5rem !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        .signature {
+            position: absolute !important;
+            right: -160px !important;
+            bottom: -10px !important;
+            font-size: 2.2rem !important;
+            margin: 0 !important;
         }
         .card, .chart-box { 
             background: var(--card) !important; 
@@ -502,29 +645,10 @@ html_content = f"""<!DOCTYPE html>
         .modal-header { border-bottom-color: var(--border) !important; }
         .close-btn { color: var(--muted) !important; }
         .close-btn:hover { color: #f0f6fc !important; }
-        
-        /* Inner Modal visibility fixes */
-        .info-box { background: rgba(88, 166, 255, 0.05) !important; border-left: 4px solid var(--blue) !important; color: #f0f6fc !important; padding: 12px !important; border-radius: 4px !important; }
+        .info-box { background: rgba(88, 166, 255, 0.1) !important; border-left: 4px solid var(--blue) !important; color: #f0f6fc !important; padding: 12px !important; border-radius: 4px !important; }
         .exec-summary { background: #0d1117 !important; border-left: 4px solid var(--blue) !important; color: #8b949e !important; padding: 12px !important; border-radius: 8px !important; margin-bottom: 12px !important; }
         .exec-header { color: #f0f6fc !important; font-weight: 800 !important; margin-bottom: 8px !important; }
         .exec-body { color: #c9d1d9 !important; }
-        .info-list li { color: #8b949e !important; }
-        .info-title { color: #f0f6fc !important; margin-top: 15px !important; margin-bottom: 8px !important; }
-        
-        .tech-details { background: #0d1117 !important; color: #8b949e !important; border: 1px solid var(--border) !important; padding: 15px !important; border-radius: 8px !important; font-family: monospace !important; }
-        .tech-tag { background: #21262d !important; color: #58a6ff !important; border: 1px solid rgba(56, 139, 253, 0.4) !important; }
-
-        table th { border-bottom: 2px solid var(--border) !important; color: var(--muted) !important; }
-        table td { border-bottom: 1px solid var(--border) !important; color: #c9d1d9 !important; }
-        tr:hover td { background: rgba(255,255,255,0.05) !important; }
-
-        .btn-close { background: #21262d !important; color: #c9d1d9 !important; border: 1px solid var(--border) !important; padding: 8px 20px !important; border-radius: 8px !important; }
-        .btn-close:hover { background: #30363d !important; color: #f0f6fc !important; }
-        .btn-tech { background: transparent !important; color: var(--muted) !important; border: 1px solid var(--border) !important; }
-        .btn-tech:hover { border-color: var(--blue) !important; color: var(--blue) !important; }
-
-        .text-green { color: #3fb950 !important; }
-        .text-red { color: #f85149 !important; }
 
         /* NEON GRADIENTS - 2026 */
         .text-neon-green {
@@ -563,6 +687,9 @@ html_content = f"""<!DOCTYPE html>
             -webkit-text-fill-color: transparent !important;
             text-shadow: 0 0 20px rgba(6, 182, 212, 0.3) !important;
         }
+
+        /* INJECTED RESPONSIVE STYLES */
+        {st.session_state.get('responsive_css', '')}
     </style>
 </head>
 """ + html_body + """
@@ -570,7 +697,7 @@ html_content = f"""<!DOCTYPE html>
     /* CHART.JS DARK THEME DEFAULTS */
     if (typeof Chart !== 'undefined') {
         Chart.defaults.color = '#8b949e';
-        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.borderColor = 'rgba(48, 54, 61, 0.5)';
         Chart.defaults.elements.line.borderWidth = 2;
         Chart.defaults.elements.point.radius = 3;
         Chart.defaults.plugins.tooltip.backgroundColor = '#161b22';
@@ -578,14 +705,10 @@ html_content = f"""<!DOCTYPE html>
         Chart.defaults.plugins.tooltip.bodyColor = '#8b949e';
         Chart.defaults.plugins.tooltip.borderColor = '#30363d';
         Chart.defaults.plugins.tooltip.borderWidth = 1;
-        
-        // Ensure scales are also light
-        Chart.defaults.scales.x = { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#8b949e' } };
-        Chart.defaults.scales.y = { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#8b949e' } };
     }
 """ + js_content + """
 </script>
 </html>
 """
 
-components.html(html_content, height=1000, scrolling=False)
+components.html(html_content, height=950, scrolling=True)
