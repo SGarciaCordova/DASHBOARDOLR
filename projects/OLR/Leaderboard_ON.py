@@ -375,7 +375,7 @@ html_template = """
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="arena-title">OPERATOR RANKED <br><span style="font-size: 1.5rem; font-weight: bold; color: #ff4d4d; text-shadow: 0 0 10px rgba(255, 77, 77, 0.8);">v.1.1</span></div>
+    <div class="arena-title">OPERATOR RANKED</div>
     <div class="arena-subtitle">REALTIME WORKFORCE ANALYTICS | <span class="date-highlight">START_DATE - END_DATE</span></div>
     
     <div class="podium-container">
